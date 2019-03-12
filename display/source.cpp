@@ -154,15 +154,93 @@ void ConnectedComponentLabeling(_TP** seg, int height, int width, int** label, i
 	}
 }
 
+// First Image Processing
+void Ex0305() {
+	/** Image Pointer */
+	int** image;
 
-int main() {
+	/** width, height of image */
 	int height, width;
-	int** image = ReadImage("koala.jpg", &height, &width);
+	
+	// Initialize
+	image = ReadImage("koala.jpg", &height, &width);
 
-	for (int i = 0; i < 100; i++)
-		image[i][(100-i) / 2] = 0;
-		
+	// Calculate
+	for (int x = 0, y = 0; x < width; x++)
+	{
+		// the equation of y for x
+		y = (int)(0.4 * x + 100 + 0.5);
+
+		// check index out of range
+		if (y < 0 || y > height - 1) continue;
+		else image[y][x] = 255;
+	}
+	
+	// Show result
 	ImageShow("test", image, height, width);
+}
+
+/** Draw a line
+ * @param Image Image file that stores color of each pixel
+ * @param Height height of image
+ * @parma Width width of image
+ * @param a Inclination of line
+ * @param b Constant added to formula
+ * @param Thickness Thickness of line
+ * @param brightness Brightness of line
+ */
+int** DrawLine(int** Image, int Height, int Width, double a, double b, double Thickness, uint8_t brightness) {
+	/** 
+	 * @Calculate y = ax + b --> ax - y + b = 0
+	 * @Result --> d = |ax0 - y0 + b| / sqrt(a*a + 1)
+	 */
+
+	for (int x = 0; x < Width; x++)
+		for (int y = 0; y < Height; y++)
+		{
+			double d = fabs(a * x - y + b) / sqrt(a*a + 1.0);
+
+			if (d < Thickness) Image[y][x] = brightness;
+		}
+
+	return Image;
+}
+
+/** Draw a circle filled with 
+ * @param Image Image file that stores color of each pixel
+ * @param Height height of image
+ * @parma Width width of image
+ * @param a X coordinate of center of circle
+ * @param b Y coordinate of center of circle
+ * @param r radius of circle
+ * @param brightness Brightness of circle
+
+ * @formula --> (x - a)^2 + (y - b)^2 = r^2
+ */
+int** DrawCircle(int** Image, int Height, int Width, double a, double b, double r, uint8_t brightness) {
+	for (int x = 0; x < Width; x++)
+		for (int y = 0; y < Height; y++)
+			if (powl(x - a, 2) + powl(y - b, 2) <= powl(r, 2))
+				Image[y][x] = brightness;
+
+	return Image;
+}
+
+int main()
+{
+	/** Image Pointer */
+	int** Image;
+
+	/** width, height of image */
+	int Height, Width;
+
+	// Initialize
+	Image = ReadImage("koala.jpg", &Height, &Width);
+
+	// Image Processing & Show Image
+	DrawCircle(Image, Height, Width, 200, 200, 80, 220);
+	DrawCircle(Image, Height, Width, 350, 350, 40, 120);
+	ImageShow("test", Image, Height, Width);
 
 	return 0;
 }
