@@ -188,13 +188,11 @@ void Ex0305() {
  * @param b Constant added to formula
  * @param Thickness Thickness of line
  * @param brightness Brightness of line
+ *
+ * @formula --> y = ax + b --> ax - y + b = 0
+ *          --> d = |ax0 - y0 + b| / sqrt(a*a + 1)
  */
 int** DrawLine(int** Image, int Height, int Width, double a, double b, double Thickness, uint8_t brightness) {
-	/** 
-	 * @Calculate y = ax + b --> ax - y + b = 0
-	 * @Result --> d = |ax0 - y0 + b| / sqrt(a*a + 1)
-	 */
-
 	for (int x = 0; x < Width; x++)
 		for (int y = 0; y < Height; y++)
 		{
@@ -226,21 +224,61 @@ int** DrawCircle(int** Image, int Height, int Width, double a, double b, double 
 	return Image;
 }
 
+/** Affine transform function
+ * @param Input (x, y) coordinate
+ * 
+ */
+ Point2d Affine(Point2d Input, double a, double b, double c, double d, double t1 = 0, double t2 = 0)
+{
+	 double NewX = a * Input.x + b * Input.y + t1;
+	 double NewY = c * Input.x + d * Input.y + t2;
+
+	 return Point2d(NewX, NewY);
+}
+
+ Point3d Affine(Point3d Input, double a, double b, double c, double d, double t1 = 0, double t2 = 0)
+ {
+	 double NewX = a * Input.x + b * Input.y + t1;
+	 double NewY = c * Input.x + d * Input.y + t2;
+	 double NewW = 1;
+
+	 return Point3d(NewX, NewY, NewW);
+ }
+
 int main()
 {
 	/** Image Pointer */
 	int** Image;
+	int** ImageOut;
 
 	/** width, height of image */
 	int Height, Width;
 
 	// Initialize
 	Image = ReadImage("koala.jpg", &Height, &Width);
+	ImageOut = IntAlloc2(Height, Width);
 
 	// Image Processing & Show Image
+
+	/** Drawing Circle
 	DrawCircle(Image, Height, Width, 200, 200, 80, 220);
 	DrawCircle(Image, Height, Width, 350, 350, 40, 120);
-	ImageShow("test", Image, Height, Width);
+	*/
+
+	/** Affine Transform */
+	for (int y = 0; y < Height - 1; y++)
+		for (int x = 0; x < Width - 1; x++)
+		{
+			Point2d point(x, y);
+			Point2d point_out = Affine(point, 0.5, 0.2, 0.3, 0.5);
+
+			if (point_out.y > Height - 1 || point_out.y < 0 || point_out.x > Width - 1 || point_out.x < 0) continue;
+
+			ImageOut[(int)point_out.y][(int)point_out.x] = Image[y][x];
+		}
+
+	// Draw transformed image
+	ImageShow("test", ImageOut, Height, Width);
 
 	return 0;
 }
