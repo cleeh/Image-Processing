@@ -262,12 +262,18 @@ int** DrawLine(int** Image, int Height, int Width, double a, double b, double Th
  * @formula --> (x - a)^2 + (y - b)^2 = r^2
  */
 int** DrawCircle(int** Image, int Height, int Width, double a, double b, double r, uint8_t brightness) {
+	int** ImageOut = IntAlloc2(Height, Width);
+
 	for (int x = 0; x < Width; x++)
 		for (int y = 0; y < Height; y++)
+		{
 			if (powl(x - a, 2) + powl(y - b, 2) <= powl(r, 2))
-				Image[y][x] = brightness;
+				ImageOut[y][x] = brightness;
+			else
+				ImageOut[y][x] = Image[y][x];
+		}
 
-	return Image;
+	return ImageOut;
 }
 
 /** Affine transform function
@@ -312,27 +318,61 @@ int** DrawCircle(int** Image, int Height, int Width, double a, double b, double 
 	 return Point3d(NewX, NewY, NewW);
  }
 
+ /** Rotate image clockwise
+  * @param Image image to rotate
+  * @param Height height of image
+  * @param Width width of image
+  * @param Angle rotation angle
+  * @param OriginY y coordinate of origin for rotation
+  * @param OriginX x coordinate of origin for rotation
+  */
+ int** RotationTransform(int** Image, double Height, double Width, double Angle, double OriginY = 0, double OriginX = 0)
+ {
+	 int** ImageOut = IntAlloc2(Height, Width);
+	 Angle /= 57.2958;
+
+	 for (int y = 0; y < Height; y++)
+	 {
+		 for (int x = 0; x < Width; x++)
+		 {
+			 double NewX = cos(Angle)*(x-OriginX) - sin(Angle)*(y-OriginY) + OriginX;
+			 double NewY = sin(Angle)*(x-OriginX) + cos(Angle)*(y-OriginY) + OriginY;
+
+			 if (NewY > Height - 1 || NewY < 0 || NewX > Width - 1 || NewX < 0) continue;
+			 ImageOut[(int)(NewY+0.5)][(int)(NewX + 0.5)] = Image[y][x];
+		 }
+	 }
+
+	 return ImageOut;
+ }
+
 int main()
 {
 	/** Image Pointer */
-	int** Image;
-	int** ImageOut;
+	int** OriginalImage;
+	int** DrawingImage;
+	int** AffinedImage;
+	int** BilinearInterpolationImage;
+	int** RotatedImage;
 
 	/** width, height of image */
 	int Height, Width;
 
 	// Initialize
-	Image = ReadImage("koala.jpg", &Height, &Width);
-	ImageOut = IntAlloc2(Height, Width);
+	OriginalImage = ReadImage("koala.jpg", &Height, &Width);
+	DrawingImage = IntAlloc2(Height, Width);
+	AffinedImage = IntAlloc2(Height, Width);
+	BilinearInterpolationImage = IntAlloc2(Height, Width);
+	RotatedImage = IntAlloc2(Height, Width);
 
 	// Image Processing & Show Image
 
-	/** Drawing Circle
-	DrawCircle(Image, Height, Width, 200, 200, 80, 220);
-	DrawCircle(Image, Height, Width, 350, 350, 40, 120);
-	*/
+	/** Drawing Circle */
+	DrawingImage = DrawCircle(OriginalImage, Height, Width, 200, 200, 80, 220);
+	DrawingImage = DrawCircle(OriginalImage, Height, Width, 350, 350, 40, 120);
+	
 
-	/** Affine Transform
+	/** Affine Transform */
 	for (int y = 0; y < Height - 1; y++)
 		for (int x = 0; x < Width - 1; x++)
 		{
@@ -340,25 +380,30 @@ int main()
 			Point2d point_out = Affine(point, 1.0, 0.4, 0.4, 2.0);
 
 			if (point_out.y > Height - 1 || point_out.y < 0 || point_out.x > Width - 1 || point_out.x < 0) continue;
-			ImageOut[(int)(point_out.y+0.5)][(int)(point_out.x+0.5)] = Image[y][x];
+			AffinedImage[(int)(point_out.y+0.5)][(int)(point_out.x+0.5)] = OriginalImage[y][x];
 		}
-	*/
 
 	/** Bilinear Interpolaion */
 	for (int y = 0; y < Height - 1; y++)
 		for (int x = 0; x < Width - 1; x++)
 		{
-			Matrix2X2 matrix = { 0.5, 0, 0, 0.5 };
+			Matrix2X2 matrix = { 2, 0, 0, 3 };
 			Matrix2X2 inverse_matrix = GetInverseMatrix(matrix);
 
 			Point2d point(x, y);
 			Point2d point_inverse_out = Affine(point, GetInverseMatrix(matrix));
 
-			ImageOut[y][x] = BilinearInterpolation(Image, Width, Height, point_inverse_out.x, point_inverse_out.y);
+			BilinearInterpolationImage[y][x] = BilinearInterpolation(OriginalImage, Width, Height, point_inverse_out.x, point_inverse_out.y);
 		}
 	
+	RotatedImage = RotationTransform(OriginalImage, Height, Width, 90, Height/2, Width/2);
+	
 	// Draw transformed image
-	ImageShow("test", ImageOut, Height, Width);
+	ImageShow("Original Image", OriginalImage, Height, Width);
+	ImageShow("Drawing Image", DrawingImage, Height, Width);
+	ImageShow("Affined Image", AffinedImage, Height, Width);
+	ImageShow("Bilinear Interpolation Image", BilinearInterpolationImage, Height, Width);
+	ImageShow("Rotated Image", RotatedImage, Height, Width);
 
 	return 0;
 }
