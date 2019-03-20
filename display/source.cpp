@@ -15,7 +15,6 @@ typedef struct {
 	int r, g, b;
 }int_rgb;
 
-
 int** IntAlloc2(int height, int width)
 {
 	int** tmp;
@@ -75,7 +74,6 @@ void WriteImage(char* name, int** image, int height, int width)
 	imwrite(name, img);
 }
 
-
 void ImageShow(char* winname, int** image, int height, int width)
 {
 	Mat img(height, width, CV_8UC1);
@@ -85,8 +83,6 @@ void ImageShow(char* winname, int** image, int height, int width)
 	imshow(winname, img);
 	waitKey(0);
 }
-
-
 
 int_rgb** ReadColorImage(char* name, int* height, int* width)
 {
@@ -191,39 +187,56 @@ typedef struct {
 	double c, d;
 }Matrix2X2;
 
-Matrix2X2 GetInverseMatrix(Matrix2X2 matrix)
+Matrix2X2 GetInverseMatrix(double a, double b, double c, double d)
 {
-	double determinant = matrix.a*matrix.d - matrix.c*matrix.d;
-	Matrix2X2 MatrixOut = { matrix.d / determinant, -matrix.b / determinant,
-		-matrix.c / determinant, matrix.a / determinant };
+	double determinant = a*d - b*c;
+	Matrix2X2 MatrixOut = { d / determinant, -b / determinant, -c / determinant, a / determinant };
 
 	return MatrixOut;
 }
 
-#define imax(x, y) ((x)>(y) ? x : y)
-#define imin(x, y) ((x)<(y) ? x : y)
-
-/** Bilinear Interpolation
- * @
-*/
-int BilinearInterpolation(int** image, int width, int height, double x, double y)
+Matrix2X2 GetInverseMatrix(Matrix2X2 matrix)
 {
-	int x_int = (int)x;
-	int y_int = (int)y;
+	return GetInverseMatrix(matrix.a, matrix.b, matrix.c, matrix.d);
+}
 
-	int A = image[imin(imax(y_int, 0), height - 1)][imin(imax(x_int, 0), width - 1)];
-	int B = image[imin(imax(y_int, 0), height - 1)][imin(imax(x_int + 1, 0), width - 1)];
-	int C = image[imin(imax(y_int + 1, 0), height - 1)][imin(imax(x_int, 0), width - 1)];
-	int D = image[imin(imax(y_int + 1, 0), height - 1)][imin(imax(x_int + 1, 0), width - 1)];
+/** Affine transform function
+* @param Input (x, y) coordinate
+* @param a,b,c,d,t1,t2,x1,y2 affine transform arguments
+*/
+Point2d Affine(Point2d Input, double a, double b, double c, double d, double t1 = 0, double t2 = 0, double x1 = 0, double y1 = 0)
+{
+	double NewX = a*(Input.x - x1) + b*(Input.y - y1) + t1;
+	double NewY = c*(Input.x - x1) + d*(Input.y - y1) + t2;
 
-	double dx = x - x_int;
-	double dy = y - y_int;
+	return Point2d(NewX, NewY);
+}
 
-	double value
-		= (1.0 - dx)*(1.0 - dy)*A + dx*(1.0 - dy)*B
-		+ (1.0 - dx)*dy*C + dx*dy*D;
+/** Affine transform function
+* @param Input (x, y) coordinate
+* @param matrix includes a, b, c, d arguments
+* @param a,b,c,d,t1,t2,x1,y2 affine transform arguments
+*/
+Point2d Affine(Point2d Input, Matrix2X2 matrix, double t1 = 0, double t2 = 0, double x1 = 0, double y1 = 0)
+{
+	double NewX = matrix.a * (Input.x - x1) + matrix.b * (Input.y - y1) + t1;
+	double NewY = matrix.c * (Input.x - x1) + matrix.d * (Input.y - y1) + t2;
 
-	return((int)(value + 0.5));
+	return Point2d(NewX, NewY);
+}
+
+/** Affine transform function
+* @param Input (x, y, w) coordinate
+* @param a, b, t1 NewX = a * OldX + b * OldY + t1
+* @param c, d, t2 NewY = c * OldX + d * OldY + t2
+*/
+Point3d Affine(Point3d Input, double a, double b, double c, double d, double t1 = 0, double t2 = 0, double x1 = 0, double y1 = 0)
+{
+	double NewX = a*(Input.x - x1) + b*(Input.y - y1) + t1;
+	double NewY = c*(Input.x - x1) + d*(Input.y - y1) + t2;
+	double NewW = 1;
+
+	return Point3d(NewX, NewY, NewW);
 }
 
 /** Draw a line
@@ -239,15 +252,17 @@ int BilinearInterpolation(int** image, int width, int height, double x, double y
  *          --> d = |ax0 - y0 + b| / sqrt(a*a + 1)
  */
 int** DrawLine(int** Image, int Height, int Width, double a, double b, double Thickness, uint8_t brightness) {
-	for (int x = 0; x < Width; x++)
-		for (int y = 0; y < Height; y++)
+	int** ImageOut = IntAlloc2(Height, Width);
+
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
 		{
-			double d = fabs(a * x - y + b) / sqrt(a*a + 1.0);
+			double d = fabs(a*x - y + b) / sqrt(a*a + 1.0);
 
 			if (d < Thickness) Image[y][x] = brightness;
 		}
 
-	return Image;
+	return ImageOut;
 }
 
 /** Draw a circle filled with 
@@ -263,9 +278,9 @@ int** DrawLine(int** Image, int Height, int Width, double a, double b, double Th
  */
 int** DrawCircle(int** Image, int Height, int Width, double a, double b, double r, uint8_t brightness) {
 	int** ImageOut = IntAlloc2(Height, Width);
-
-	for (int x = 0; x < Width; x++)
-		for (int y = 0; y < Height; y++)
+	
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
 		{
 			if (powl(x - a, 2) + powl(y - b, 2) <= powl(r, 2))
 				ImageOut[y][x] = brightness;
@@ -276,49 +291,49 @@ int** DrawCircle(int** Image, int Height, int Width, double a, double b, double 
 	return ImageOut;
 }
 
-/** Affine transform function
- * @param Input (x, y) coordinate
- * @param a, b, t1 NewX = a * OldX + b * OldY + t1
- * @param c, d, t2 NewY = c * OldX + d * OldY + t2
- */
- Point2d Affine(Point2d Input, double a, double b, double c, double d, double t1 = 0, double t2 = 0)
+/** Apply bilinear interpolation on image after affine transform
+* @param Image image to apply bilinear interpolation on
+* @param Height height of image
+* @param Width width of image
+* @param a, b, c, d arguments of invertible matrix
+*/
+int** BilinearInterpolation(int** Image, int Height, int Width, double a, double b, double c, double d, double t1 = 0, double t2 = 0, double x1 = 0, double y1 = 0)
 {
-	 double NewX = a * Input.x + b * Input.y + t1;
-	 double NewY = c * Input.x + d * Input.y + t2;
+	int** ImageOut = IntAlloc2(Height, Width);
 
-	 return Point2d(NewX, NewY);
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+		{
+			Point2d InversedPoint = Affine(Point2d(x, y), GetInverseMatrix(a, b, c, d), t1, t2, x1, y1);
+
+			int LT_X = (int)InversedPoint.x;	int RT_X = LT_X + 1;
+			int LT_Y = (int)InversedPoint.y;	int RT_Y = LT_Y;
+			int LB_X = LT_X;					int RB_X = LT_X + 1;
+			int LB_Y = LT_Y + 1;				int RB_Y = LT_Y + 1;
+
+			// pass sequence if image processcing area isn't inside of image size
+			if (LT_X < 0 || LT_Y < 0 || RB_X > Width - 1 || RB_Y > Height - 1)
+				continue;
+
+			double dx = InversedPoint.x - LT_X;
+			double dy = InversedPoint.y - LT_Y;
+
+			int A = Image[LT_Y][LT_X];			int B = Image[RT_Y][RT_X];
+			int C = Image[LB_Y][LB_X];			int D = Image[RB_Y][RB_X];
+
+			double value =
+				A * (1.0 - dx) * (1.0 - dy) +
+				B * dx * (1.0 - dy) +
+				C * (1.0 - dx) * dy +
+				D * dx * dy;
+
+			ImageOut[y][x] = (int)(value + 0.5);
+		}
+
+	return ImageOut;
 }
 
- /** Affine transform function
- * @param Input (x, y) coordinate
- * @param matrix includes a, b, c, d arguments
-
- * @formula a, b, t1 NewX = a * OldX + b * OldY + t1
- * @formula c, d, t2 NewY = c * OldX + d * OldY + t2
- */
- Point2d Affine(Point2d Input, Matrix2X2 matrix, double t1 = 0, double t2 = 0)
- {
-	 double NewX = matrix.a * Input.x + matrix.b * Input.y + t1;
-	 double NewY = matrix.c * Input.x + matrix.d * Input.y + t2;
-
-	 return Point2d(NewX, NewY);
- }
-
- /** Affine transform function
- * @param Input (x, y, w) coordinate
- * @param a, b, t1 NewX = a * OldX + b * OldY + t1
- * @param c, d, t2 NewY = c * OldX + d * OldY + t2
- */
- Point3d Affine(Point3d Input, double a, double b, double c, double d, double t1 = 0, double t2 = 0)
- {
-	 double NewX = a * Input.x + b * Input.y + t1;
-	 double NewY = c * Input.x + d * Input.y + t2;
-	 double NewW = 1;
-
-	 return Point3d(NewX, NewY, NewW);
- }
-
- /** Rotate image clockwise
+ /** Rotate image clockwise and apply bilinear interpolation on image
   * @param Image image to rotate
   * @param Height height of image
   * @param Width width of image
@@ -328,22 +343,10 @@ int** DrawCircle(int** Image, int Height, int Width, double a, double b, double 
   */
  int** RotationTransform(int** Image, double Height, double Width, double Angle, double OriginY = 0, double OriginX = 0)
  {
-	 int** ImageOut = IntAlloc2(Height, Width);
+	 // transform radian to degree
 	 Angle /= 57.2958;
 
-	 for (int y = 0; y < Height; y++)
-	 {
-		 for (int x = 0; x < Width; x++)
-		 {
-			 double NewX = cos(Angle)*(x-OriginX) - sin(Angle)*(y-OriginY) + OriginX;
-			 double NewY = sin(Angle)*(x-OriginX) + cos(Angle)*(y-OriginY) + OriginY;
-
-			 if (NewY > Height - 1 || NewY < 0 || NewX > Width - 1 || NewX < 0) continue;
-			 ImageOut[(int)(NewY+0.5)][(int)(NewX + 0.5)] = Image[y][x];
-		 }
-	 }
-
-	 return ImageOut;
+	 return BilinearInterpolation(Image, Height, Width, cos(Angle), -sin(Angle), sin(Angle), cos(Angle), OriginX, OriginY, OriginX, OriginY);;
  }
 
 int main()
@@ -358,21 +361,20 @@ int main()
 	/** width, height of image */
 	int Height, Width;
 
-	// Initialize
+	/** Initialize */
 	OriginalImage = ReadImage("koala.jpg", &Height, &Width);
 	DrawingImage = IntAlloc2(Height, Width);
 	AffinedImage = IntAlloc2(Height, Width);
 	BilinearInterpolationImage = IntAlloc2(Height, Width);
 	RotatedImage = IntAlloc2(Height, Width);
 
-	// Image Processing & Show Image
+	/** Image Processing */
 
-	/** Drawing Circle */
+	// Drawing Circle
 	DrawingImage = DrawCircle(OriginalImage, Height, Width, 200, 200, 80, 220);
 	DrawingImage = DrawCircle(OriginalImage, Height, Width, 350, 350, 40, 120);
 	
-
-	/** Affine Transform */
+	// Affine Transform
 	for (int y = 0; y < Height - 1; y++)
 		for (int x = 0; x < Width - 1; x++)
 		{
@@ -383,22 +385,13 @@ int main()
 			AffinedImage[(int)(point_out.y+0.5)][(int)(point_out.x+0.5)] = OriginalImage[y][x];
 		}
 
-	/** Bilinear Interpolaion */
-	for (int y = 0; y < Height - 1; y++)
-		for (int x = 0; x < Width - 1; x++)
-		{
-			Matrix2X2 matrix = { 2, 0, 0, 3 };
-			Matrix2X2 inverse_matrix = GetInverseMatrix(matrix);
-
-			Point2d point(x, y);
-			Point2d point_inverse_out = Affine(point, GetInverseMatrix(matrix));
-
-			BilinearInterpolationImage[y][x] = BilinearInterpolation(OriginalImage, Width, Height, point_inverse_out.x, point_inverse_out.y);
-		}
+	// Bilinear Interpolaion
+	BilinearInterpolationImage = BilinearInterpolation(OriginalImage, Height, Width, 1.5, 0, 0, 1.5);
 	
-	RotatedImage = RotationTransform(OriginalImage, Height, Width, 90, Height/2, Width/2);
-	
-	// Draw transformed image
+	// Rotation Transform
+	RotatedImage = RotationTransform(OriginalImage, Height, Width, 45, Height/2, Width/2);
+
+	/** Show Image */
 	ImageShow("Original Image", OriginalImage, Height, Width);
 	ImageShow("Drawing Image", DrawingImage, Height, Width);
 	ImageShow("Affined Image", AffinedImage, Height, Width);
