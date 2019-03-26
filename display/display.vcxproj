@@ -150,6 +150,9 @@
   <ItemGroup>
     <ClCompile Include="source.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Pinhole Camera.pptx" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
