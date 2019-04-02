@@ -15,6 +15,23 @@ typedef struct {
 	int r, g, b;
 }int_rgb;
 
+float** FloatAlloc2(int height, int width)
+{
+	float** tmp;
+	tmp = (float**)calloc(height, sizeof(float*));
+	for (int i = 0; i<height; i++)
+		tmp[i] = (float*)calloc(width, sizeof(float));
+	return(tmp);
+}
+
+void FloatFree2(float** image, int height, int width)
+{
+	for (int i = 0; i<height; i++)
+		free(image[i]);
+
+	free(image);
+}
+
 int** IntAlloc2(int height, int width)
 {
 	int** tmp;
@@ -200,6 +217,11 @@ Matrix2X2 GetInverseMatrix(Matrix2X2 matrix)
 	return GetInverseMatrix(matrix.a, matrix.b, matrix.c, matrix.d);
 }
 
+double inline GetLength(Point3d p, Point3d q = Point3d(0, 0, 0))
+{
+	return sqrtl(powl(p.x - q.x, 2) + powl(p.y - q.y, 2) + powl(p.z - q.z, 2));
+}
+
 /** Affine transform function
 * @param Input (x, y) coordinate
 * @param a,b,c,d,t1,t2,x1,y2 affine transform arguments
@@ -333,49 +355,95 @@ int** BilinearInterpolation(int** Image, int Height, int Width, double a, double
 	return ImageOut;
 }
 
- /** Rotate image clockwise and apply bilinear interpolation on image
-  * @param Image image to rotate
-  * @param Height height of image
-  * @param Width width of image
-  * @param Angle rotation angle
-  * @param OriginY y coordinate of origin for rotation
-  * @param OriginX x coordinate of origin for rotation
-  */
- int** RotationTransform(int** Image, double Height, double Width, double Angle, double OriginY = 0, double OriginX = 0)
- {
-	 // transform radian to degree
-	 Angle /= 57.2958;
+/** Rotate image clockwise and apply bilinear interpolation on image
+ * @param Image image to rotate
+ * @param Height height of image
+ * @param Width width of image
+ * @param Angle rotation angle
+ * @param OriginY y coordinate of origin for rotation
+ * @param OriginX x coordinate of origin for rotation
+ */
+int** RotationTransform(int** Image, double Height, double Width, double Angle, double OriginY = 0, double OriginX = 0)
+{
+	// transform radian to degree
+	Angle /= 57.2958;
 
-	 return BilinearInterpolation(Image, Height, Width, cos(Angle), -sin(Angle), sin(Angle), cos(Angle), OriginX, OriginY, OriginX, OriginY);;
- }
+	return BilinearInterpolation(Image, Height, Width, cos(Angle), -sin(Angle), sin(Angle), cos(Angle), OriginX, OriginY, OriginX, OriginY);;
+}
 
- /** Transform 3D line to 2D line & Show transformed image
-  * @param p starting point of line
-  * @param q ending point of line
-  * @param Height height of image to show
-  * @param Width width of image to show
-  * @param DotNumber number of dot expressing line (the more this parameter is bigger, the more result looks like line)
-  * @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
-  * @param brightness brightness of dot marked on image
+/** Transform 3D line to 2D line & Show transformed image
+ * @param Image image which line is projected to
+ * @param Height height of image to show
+ * @param Width width of image to show
+ * @param p starting point of line
+ * @param q ending point of line
+ * @param DotNumber number of dot expressing line (the more this parameter is bigger, the more result looks like line)
+ * @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
+ * @param brightness brightness of dot marked on image
 
-  * @description refer to resource
-  */
- int** Pinhole(int** Image, Point3d p, Point3d q, double Height, double Width, int DotNumber, double PlaneDistance = 1, uint8_t brightness = 255)
- {
-	 int** ImageOut = Image;
+ * @description refer to resource file: "Pinhole Camera.pptx"
+ */
+int** PinholeLine(int** Image, double Height, double Width, Point3d p, Point3d q, int DotNumber, double PlaneDistance = 1, uint8_t brightness = 255)
+{
+	int** ImageOut = Image;
 
-	 /*if (Image) ImageOut = Image;
-	 else ImageOut = IntAlloc2(Height, Width);*/
+	for (double t = 0; t < 1; t += (double)1/ DotNumber)
+	{
+		Point3d point_projected = Affine(p + t*(q - p), PlaneDistance, 0, 0, PlaneDistance, Width / 2, Height / 2);
+		if (point_projected.x >= Width || point_projected.x < 0 || point_projected.y >= Height || point_projected.y < 0) continue;
+		ImageOut[(int)(point_projected.y + 0.5)][(int)(point_projected.x + 0.5)] = brightness;
+	}
 
-	 for (double t = 0; t < 1; t += (double)1/ DotNumber)
-	 {
-		 Point3d point_projected = Affine(p + t*(q - p), PlaneDistance, 0, 0, PlaneDistance, Width / 2, Height / 2);
-		 if (point_projected.x >= Width || point_projected.x < 0 || point_projected.y >= Height || point_projected.y < 0) continue;
-		 ImageOut[(int)(point_projected.y + 0.5)][(int)(point_projected.x + 0.5)] = brightness;
-	 }
+	return ImageOut;
+}
 
-	 return ImageOut;
- }
+/** Transform 3D Parallelogram to 2D Parallelogram & Show transformed image
+ * @param Image image which parallelogram is projected to
+ * @param Height height of image to show
+ * @param Width width of image to show
+ * @param o coordinate for cornor of parallelogram
+ * @param n,m side vector starting from 'o' vector
+ * @param DotNumber number of dot expressing line (the more this parameter is bigger, the more result looks like line)
+ * @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
+ * @param brightness brightness of dot marked on image
+
+ * @description refer to resource file: "Pinhole Camera.pptx"
+ */
+int** PinholeParallelogram(int** Image, double Height, double Width, Point3d o, Point3d n, Point3d m, int DotNumber, double PlaneDistance = 1, uint8_t brightness = 255)
+{
+	int** ImageOut = Image;
+
+	double NLength = GetLength(n);
+	double MLength = GetLength(m);
+	double LengthUnit = (double)DotNumber / ((GetLength(n) + GetLength(m)) * 2.0);
+
+	ImageOut = PinholeLine(Image, Height, Width, o, o + n, (int)(MLength * LengthUnit + 0.5));
+	ImageOut = PinholeLine(Image, Height, Width, o, o + m, (int)(NLength * LengthUnit + 0.5));
+	ImageOut = PinholeLine(Image, Height, Width, o + m, o + n + m, (int)(MLength * LengthUnit + 0.5));
+	ImageOut = PinholeLine(Image, Height, Width, o + n, o + n + m, (int)(NLength * LengthUnit + 0.5));
+
+	return ImageOut;
+}
+
+int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point3d o, Point3d n, Point3d m, int Extent, double PlaneDistance = 1, uint8_t brightness = 255)
+{
+	int** ImageOut = Image;
+
+	double NLength = GetLength(n);
+	double MLength = GetLength(m);
+	double LengthUnit = (double)Extent / GetLength(n) * GetLength(m);
+
+	for (double t = 0; t < 1; t += (double)1 / (MLength * LengthUnit))
+	{
+		for (double q = 0; q < 1; q += (double)1 / (MLength * LengthUnit))
+		{
+			Point3d point_projected = Affine(o + t * n + q * m, PlaneDistance, 0, 0, PlaneDistance, Width / 2, Height / 2);
+			if (point_projected.x >= Width || point_projected.x < 0 || point_projected.y >= Height || point_projected.y < 0) continue;
+			ImageOut[(int)(point_projected.y + 0.5)][(int)(point_projected.x + 0.5)] = brightness;
+		}
+	}
+	return ImageOut;
+}
 
 int main()
 {
@@ -419,21 +487,38 @@ int main()
 	// Rotation Transform
 	RotatedImage = RotationTransform(OriginalImage, Height, Width, 45, Height/2, Width/2);
 
-	// Pinhole Camera - Transform 3D line to 2D line & Show 2D line on image
-	const int PinholeImageHeight = 800;
-	const int PinholeImageWidth = 800;
+	// Pinhole Camera - Line 3D Projection
+	const int PinholeLineImageHeight = 768;
+	const int PinholeLineImageWidth = 1024;
 
-	int** PinholeCameraImage = IntAlloc2(PinholeImageHeight, PinholeImageWidth);
-	PinholeCameraImage = Pinhole(PinholeCameraImage, Point3d(-100, -100, 0), Point3d(100, 100, 0), PinholeImageHeight, PinholeImageWidth, 400, 2);
-	PinholeCameraImage = Pinhole(PinholeCameraImage, Point3d(-12, -13, -20), Point3d(30, 40, 30), PinholeImageHeight, PinholeImageWidth, 400, 2);
+	int** PinholeCameraLineImage = IntAlloc2(PinholeLineImageHeight, PinholeLineImageWidth);
+	PinholeCameraLineImage = PinholeLine(PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth, Point3d(0, 0, 0), Point3d(100, 150, 200), 1000, 1.5);
+	PinholeCameraLineImage = PinholeLine(PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth, Point3d(-200, -200, -200), Point3d(0, 100, 200),  1000, 1.5);
+
+	// Pinhole Camera - Rectangle 3D Projection
+	const int PinholeRectangleImageHeight = 768;
+	const int PinholeRectangleImageWidth = 1024;
+
+	int** PinholeCameraRectangleImage = IntAlloc2(PinholeRectangleImageHeight, PinholeRectangleImageWidth);
+	PinholeCameraRectangleImage = PinholeParallelogram(PinholeCameraRectangleImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, Point3d(-200, -150, -300), Point3d(200, 30, 40), Point3d(10, 100, 450), 30);
+
+	//
+	const int PinholeRectangleFilledImageHeight = 768;
+	const int PinholeRectangleFilledImageWidth = 1024;
+
+	int** PinholeCameraRectangleFilledImage = IntAlloc2(PinholeRectangleImageHeight, PinholeRectangleImageWidth);
+	PinholeCameraRectangleFilledImage = PinholeParallelogramFilled(PinholeCameraRectangleFilledImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, Point3d(-200, -300, -300), Point3d(200, 0, 0), Point3d(0, 300, 0), 1);
+	PinholeCameraRectangleFilledImage = PinholeParallelogramFilled(PinholeCameraRectangleFilledImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, Point3d(200, 400, 100), Point3d(200, 40, 60), Point3d(10, 300, 180), 1);
 
 	/** Show Image */
 	ImageShow("Original Image", OriginalImage, Height, Width);
-	ImageShow("Drawing Image", DrawingImage, Height, Width);
+ 	ImageShow("Drawing Image", DrawingImage, Height, Width);
 	ImageShow("Affined Image", AffinedImage, Height, Width);
 	ImageShow("Bilinear Interpolation Image", BilinearInterpolationImage, Height, Width);
 	ImageShow("Rotated Image", RotatedImage, Height, Width);
-	ImageShow("Pinhole Camera Image", PinholeCameraImage, PinholeImageHeight, PinholeImageWidth);
+	ImageShow("Pinhole Camera Line Image", PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth);
+	ImageShow("Pinhole Camera Rectangle Image", PinholeCameraRectangleImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth);
+	ImageShow("Pinhole Camera Rectangle Filled Image", PinholeCameraRectangleFilledImage, PinholeRectangleFilledImageHeight, PinholeRectangleFilledImageWidth);
 
 	return 0;
 }
