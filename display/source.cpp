@@ -390,7 +390,7 @@ int** PinholeLine(int** Image, double Height, double Width, Point3d p, Point3d q
 	for (double t = 0; t < 1; t += (double)1/ DotNumber)
 	{
 		Point3d point_projected = Affine(p + t*(q - p), PlaneDistance, 0, 0, PlaneDistance, Width / 2, Height / 2);
-		if (point_projected.x >= Width || point_projected.x < 0 || point_projected.y >= Height || point_projected.y < 0) continue;
+		if (point_projected.x >= Width - 1 || point_projected.x < 0 || point_projected.y >= Height - 1 || point_projected.y < 0) continue;
 		ImageOut[(int)(point_projected.y + 0.5)][(int)(point_projected.x + 0.5)] = brightness;
 	}
 
@@ -417,31 +417,58 @@ int** PinholeParallelogram(int** Image, double Height, double Width, Point3d o, 
 	double MLength = GetLength(m);
 	double LengthUnit = (double)DotNumber / ((GetLength(n) + GetLength(m)) * 2.0);
 
-	ImageOut = PinholeLine(Image, Height, Width, o, o + n, (int)(MLength * LengthUnit + 0.5));
-	ImageOut = PinholeLine(Image, Height, Width, o, o + m, (int)(NLength * LengthUnit + 0.5));
-	ImageOut = PinholeLine(Image, Height, Width, o + m, o + n + m, (int)(MLength * LengthUnit + 0.5));
-	ImageOut = PinholeLine(Image, Height, Width, o + n, o + n + m, (int)(NLength * LengthUnit + 0.5));
+	ImageOut = PinholeLine(Image, Height, Width, o, n, (int)(MLength * LengthUnit + 0.5));
+	ImageOut = PinholeLine(Image, Height, Width, o, m, (int)(NLength * LengthUnit + 0.5));
+	ImageOut = PinholeLine(Image, Height, Width, m, n + m - o, (int)(MLength * LengthUnit + 0.5));
+	ImageOut = PinholeLine(Image, Height, Width, n, n + m - o, (int)(NLength * LengthUnit + 0.5));
 
 	return ImageOut;
 }
 
-int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point3d o, Point3d n, Point3d m, int Extent, double PlaneDistance = 1, uint8_t brightness = 255)
+/** Transform 3D Parallelogram to 2D Parallelogram & Show transformed image
+ * @param Image image which parallelogram is projected to
+ * @param Height height of image to show
+ * @param Width width of image to show
+ * @param o,n,m coordinate for cornor of parallelogram
+ * @param Density density of dots (the bigger this value is, the more dense dots composing arallelogram is)
+ * @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
+ * @param brightness brightness of dot marked on image
+
+ * @description refer to resource file: "Pinhole Camera.pptx"
+ */
+int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point3d o, Point3d n, Point3d m, int Density = 1, double PlaneDistance = 1, uint8_t brightness = 255)
 {
 	int** ImageOut = Image;
 
 	double NLength = GetLength(n);
 	double MLength = GetLength(m);
-	double LengthUnit = (double)Extent / GetLength(n) * GetLength(m);
 
-	for (double t = 0; t < 1; t += (double)1 / (MLength * LengthUnit))
+	for (double t = 0; t < 1; t += (double)1 / (NLength * Density))
 	{
-		for (double q = 0; q < 1; q += (double)1 / (MLength * LengthUnit))
+		for (double q = 0; q < 1; q += (double)1 / (MLength * Density))
 		{
-			Point3d point_projected = Affine(o + t * n + q * m, PlaneDistance, 0, 0, PlaneDistance, Width / 2, Height / 2);
-			if (point_projected.x >= Width || point_projected.x < 0 || point_projected.y >= Height || point_projected.y < 0) continue;
+			Point3d point_projected = Affine(o + t*(n - o) + q*(m - o), PlaneDistance, 0, 0, PlaneDistance, Width / 2, Height / 2);
+			if (point_projected.x >= Width - 1 || point_projected.x < 0 || point_projected.y >= Height - 1 || point_projected.y < 0) continue;
 			ImageOut[(int)(point_projected.y + 0.5)][(int)(point_projected.x + 0.5)] = brightness;
 		}
 	}
+	return ImageOut;
+}
+
+int** RenderImage(int** ImageDest, double HeightDest, double WidthDest, int** ImageSrc, double HeightSrc, double WidthSrc, Point3d o, Point3d n, Point3d m, double PlaneDistance = 1, uint8_t brightness = 255)
+{
+	int** ImageOut = ImageDest;
+
+	for (int y = 0; y < HeightSrc; y++)
+	{
+		for (int x = 0; x < WidthSrc; x++)
+		{
+			Point3d point_projected = Affine(o + (n - o)*x/WidthSrc + (m - o)*y/HeightSrc, PlaneDistance, 0, 0, PlaneDistance, WidthDest / 2, HeightDest / 2);
+			if (point_projected.x >= WidthDest - 1 || point_projected.x < 0 || point_projected.y >= HeightDest - 1 || point_projected.y < 0) continue;
+			ImageOut[(int)(point_projected.y + 0.5)][(int)(point_projected.x + 0.5)] = ImageSrc[y][x];
+		}
+	}
+
 	return ImageOut;
 }
 
@@ -502,13 +529,38 @@ int main()
 	int** PinholeCameraRectangleImage = IntAlloc2(PinholeRectangleImageHeight, PinholeRectangleImageWidth);
 	PinholeCameraRectangleImage = PinholeParallelogram(PinholeCameraRectangleImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, Point3d(-200, -150, -300), Point3d(200, 30, 40), Point3d(10, 100, 450), 30);
 
-	//
+	// Pinhole Camera - Filled Rectangle 3D Projection
 	const int PinholeRectangleFilledImageHeight = 768;
 	const int PinholeRectangleFilledImageWidth = 1024;
 
 	int** PinholeCameraRectangleFilledImage = IntAlloc2(PinholeRectangleImageHeight, PinholeRectangleImageWidth);
-	PinholeCameraRectangleFilledImage = PinholeParallelogramFilled(PinholeCameraRectangleFilledImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, Point3d(-200, -300, -300), Point3d(200, 0, 0), Point3d(0, 300, 0), 1);
-	PinholeCameraRectangleFilledImage = PinholeParallelogramFilled(PinholeCameraRectangleFilledImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, Point3d(200, 400, 100), Point3d(200, 40, 60), Point3d(10, 300, 180), 1);
+	PinholeCameraRectangleFilledImage = PinholeParallelogramFilled(PinholeCameraRectangleFilledImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, Point3d(-200, -150, -300), Point3d(200, 30, 40), Point3d(10, 100, 450), 1);
+
+	// Rendering Image
+	const int RenderingHeight = 768;
+	const int RenderingWidth = 1024;
+
+	int** RenderingImage = IntAlloc2(RenderingHeight, RenderingWidth);
+	RenderingImage = RenderImage(RenderingImage, RenderingHeight, RenderingWidth, OriginalImage, Height, Width, Point3d(-200, -150, -300), Point3d(200, 30, -40), Point3d(10, 100, -450));
+
+	// Cube Rendering
+	Point3d a, b, c, d, e, f, g, h;
+	a = Point3d(0, -100, 500);
+	b = Point3d(200, 0, 700);
+	c = Point3d(0, 100, 900);
+	d = Point3d(-200, 0, 700);
+	e = Point3d(0, -300, 500);
+	f = Point3d(200, -200, 700);
+	g = Point3d(0, -100, 900);
+	h = Point3d(-200, -200, 700);
+
+	const int CubeImageHeight = 768;
+	const int CubeImageWidth = 1024;
+
+	int** CubeImage = IntAlloc2(CubeImageHeight, CubeImageWidth);
+	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, -a, -b, -e);
+	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, -a, -d, -e);
+	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, -a, -b, -d);
 
 	/** Show Image */
 	ImageShow("Original Image", OriginalImage, Height, Width);
@@ -516,9 +568,11 @@ int main()
 	ImageShow("Affined Image", AffinedImage, Height, Width);
 	ImageShow("Bilinear Interpolation Image", BilinearInterpolationImage, Height, Width);
 	ImageShow("Rotated Image", RotatedImage, Height, Width);
-	ImageShow("Pinhole Camera Line Image", PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth);
-	ImageShow("Pinhole Camera Rectangle Image", PinholeCameraRectangleImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth);
-	ImageShow("Pinhole Camera Rectangle Filled Image", PinholeCameraRectangleFilledImage, PinholeRectangleFilledImageHeight, PinholeRectangleFilledImageWidth);
+	ImageShow("Pinhole Camera - Line Image", PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth);
+	ImageShow("Pinhole Camera - Rectangle Image", PinholeCameraRectangleImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth);
+	ImageShow("Pinhole Camera - Rectangle Filled Image", PinholeCameraRectangleFilledImage, PinholeRectangleFilledImageHeight, PinholeRectangleFilledImageWidth);
+	ImageShow("Pinhole Camera - Rendering Image", RenderingImage, RenderingHeight, RenderingWidth);
+	ImageShow("Cube Image Projection", CubeImage, CubeImageHeight, CubeImageWidth);
 
 	return 0;
 }
