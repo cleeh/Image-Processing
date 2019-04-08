@@ -249,8 +249,8 @@ Point2d Affine(Point2d Input, Matrix2X2 matrix, double t1 = 0, double t2 = 0, do
 
 /** Affine transform function
 * @param Input (x, y, w) coordinate
-* @param a, b, t1 NewX = a * OldX + b * OldY + t1
-* @param c, d, t2 NewY = c * OldX + d * OldY + t2
+* @param a,b,t1 NewX = a*(Input.x - x1) + b*(Input.y - y1) + t1
+* @param c,d,t2 NewY = c*(Input.x - x1) + d*(Input.y - y1) + t2
 */
 Point3d Affine(Point3d Input, double a, double b, double c, double d, double t1 = 0, double t2 = 0, double x1 = 0, double y1 = 0)
 {
@@ -259,6 +259,21 @@ Point3d Affine(Point3d Input, double a, double b, double c, double d, double t1 
 	double NewW = 1;
 
 	return Point3d(NewX, NewY, NewW);
+}
+
+/** Affine transform function
+* @param Input (x, y, w) coordinate
+* @param a,b,c,t1,x1 NewX = a*(Input.x - x1) + b*(Input.y - y1) + c*(Input.z - z1) + t1
+* @param d,e,f,t2,y1 NewY = d*(Input.x - x1) + e*(Input.y - y1) + f*(Input.z - z1) + t2
+* @param g,h,i,t3,z1 NewZ = g*(Input.x - x1) + h*(Input.y - y1) + i*(Input.z - z1) + t3
+*/
+Point3d Affine(Point3d Input, double a, double b, double c, double d, double e, double f, double g, double h, double i, double t1 = 0, double t2 = 0, double t3 = 0, double x1 = 0, double y1 = 0, double z1 = 0)
+{
+	double NewX = a*(Input.x - x1) + b*(Input.y - y1) + c*(Input.z - z1) + t1;
+	double NewY = d*(Input.x - x1) + e*(Input.y - y1) + f*(Input.z - z1) + t2;
+	double NewZ = g*(Input.x - x1) + h*(Input.y - y1) + i*(Input.z - z1) + t3;
+
+	return Point3d(NewX, NewY, NewZ);
 }
 
 /** Draw a line
@@ -383,13 +398,18 @@ int** RotationTransform(int** Image, double Height, double Width, double Angle, 
 
  * @description refer to resource file: "Pinhole Camera.pptx"
  */
-int** PinholeLine(int** Image, double Height, double Width, Point3d p, Point3d q, int DotNumber, double PlaneDistance = 1, uint8_t brightness = 255)
+int** PinholeLine(int** Image, double Height, double Width, Point3d p, Point3d q, int DotNumber, double PlaneDistance = 300, uint8_t brightness = 255)
 {
 	int** ImageOut = Image;
 
+	p *= -1;
+	q *= -1;
+
 	for (double t = 0; t < 1; t += (double)1/ DotNumber)
 	{
-		Point3d point_projected = Affine(p + t*(q - p), PlaneDistance, 0, 0, PlaneDistance, Width / 2, Height / 2);
+		Point3d point_target = p + t*(q - p);
+
+		Point3d point_projected = Affine(point_target, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance, Width / 2, Height / 2);
 		if (point_projected.x >= Width - 1 || point_projected.x < 0 || point_projected.y >= Height - 1 || point_projected.y < 0) continue;
 		ImageOut[(int)(point_projected.y + 0.5)][(int)(point_projected.x + 0.5)] = brightness;
 	}
@@ -409,9 +429,13 @@ int** PinholeLine(int** Image, double Height, double Width, Point3d p, Point3d q
 
  * @description refer to resource file: "Pinhole Camera.pptx"
  */
-int** PinholeParallelogram(int** Image, double Height, double Width, Point3d o, Point3d n, Point3d m, int DotNumber, double PlaneDistance = 1, uint8_t brightness = 255)
+int** PinholeParallelogram(int** Image, double Height, double Width, Point3d o, Point3d n, Point3d m, int DotNumber, double PlaneDistance = 300, uint8_t brightness = 255)
 {
 	int** ImageOut = Image;
+
+	o.y *= -1;
+	n.y *= -1;
+	m.y *= -1;
 
 	double NLength = GetLength(n);
 	double MLength = GetLength(m);
@@ -436,9 +460,14 @@ int** PinholeParallelogram(int** Image, double Height, double Width, Point3d o, 
 
  * @description refer to resource file: "Pinhole Camera.pptx"
  */
-int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point3d o, Point3d n, Point3d m, int Density = 1, double PlaneDistance = 1, uint8_t brightness = 255)
+int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point3d o, Point3d n, Point3d m, double Density = 1, double PlaneDistance = 300, uint8_t brightness = 255)
 {
 	int** ImageOut = Image;
+
+	o.y *= -1;
+	n.y *= -1;
+	m.y *= -1;
+	Density *= 0.1;
 
 	double NLength = GetLength(n);
 	double MLength = GetLength(m);
@@ -447,7 +476,9 @@ int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point
 	{
 		for (double q = 0; q < 1; q += (double)1 / (MLength * Density))
 		{
-			Point3d point_projected = Affine(o + t*(n - o) + q*(m - o), PlaneDistance, 0, 0, PlaneDistance, Width / 2, Height / 2);
+			Point3d point_target = o + t*(n - o) + q*(m - o);
+
+			Point3d point_projected = Affine(point_target, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance, Width / 2, Height / 2);
 			if (point_projected.x >= Width - 1 || point_projected.x < 0 || point_projected.y >= Height - 1 || point_projected.y < 0) continue;
 			ImageOut[(int)(point_projected.y + 0.5)][(int)(point_projected.x + 0.5)] = brightness;
 		}
@@ -455,15 +486,35 @@ int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point
 	return ImageOut;
 }
 
-int** RenderImage(int** ImageDest, double HeightDest, double WidthDest, int** ImageSrc, double HeightSrc, double WidthSrc, Point3d o, Point3d n, Point3d m, double PlaneDistance = 1, uint8_t brightness = 255)
+/** Transform 3D Parallelogram to 2D Parallelogram & Show transformed image
+* @param ImageDest image which 3D image is projected to
+* @param HeightDest height of image to show
+* @param WidthDest width of image to show
+* @param ImageSrc image to project
+* @param HeightSrc height of image to project
+* @param WidthSrc width of image to project
+* @param o,n,m coordinate for cornor of parallelogram
+* @param Density density of dots (the bigger this value is, the more dense dots composing arallelogram is)
+* @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
+* @param brightness brightness of dot marked on image
+
+* @description refer to resource file: "Pinhole Camera.pptx"
+*/
+int** RenderImage(int** ImageDest, double HeightDest, double WidthDest, int** ImageSrc, double HeightSrc, double WidthSrc, Point3d o, Point3d n, Point3d m, double PlaneDistance = 300, uint8_t brightness = 255)
 {
 	int** ImageOut = ImageDest;
+
+	o.y *= -1;
+	n.y *= -1;
+	m.y *= -1;
 
 	for (int y = 0; y < HeightSrc; y++)
 	{
 		for (int x = 0; x < WidthSrc; x++)
 		{
-			Point3d point_projected = Affine(o + (n - o)*x/WidthSrc + (m - o)*y/HeightSrc, PlaneDistance, 0, 0, PlaneDistance, WidthDest / 2, HeightDest / 2);
+			Point3d point_target = o + (n - o)*x / WidthSrc + (m - o)*y / HeightSrc;
+
+			Point3d point_projected = Affine(point_target, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance, WidthDest / 2, HeightDest / 2);
 			if (point_projected.x >= WidthDest - 1 || point_projected.x < 0 || point_projected.y >= HeightDest - 1 || point_projected.y < 0) continue;
 			ImageOut[(int)(point_projected.y + 0.5)][(int)(point_projected.x + 0.5)] = ImageSrc[y][x];
 		}
@@ -514,53 +565,54 @@ int main()
 	// Rotation Transform
 	RotatedImage = RotationTransform(OriginalImage, Height, Width, 45, Height/2, Width/2);
 
+	// 3D Coordinate
+	Point3d a, b, c, d, e, f, g, h;
+	a = Point3d(0, -100, 500);
+	b = Point3d(200, -100, 700);
+	c = Point3d(0, -100, 900);
+	d = Point3d(-200, -100, 700);
+	e = Point3d(0, -100 - 200 * sqrt(2), 500);
+	f = Point3d(200, -100 - 200 * sqrt(2), 700);
+	g = Point3d(0, -100 - 200 * sqrt(2), 900);
+	h = Point3d(-200, -100 - 200 * sqrt(2), 700);
+
 	// Pinhole Camera - Line 3D Projection
 	const int PinholeLineImageHeight = 768;
 	const int PinholeLineImageWidth = 1024;
 
 	int** PinholeCameraLineImage = IntAlloc2(PinholeLineImageHeight, PinholeLineImageWidth);
-	PinholeCameraLineImage = PinholeLine(PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth, Point3d(0, 0, 0), Point3d(100, 150, 200), 1000, 1.5);
-	PinholeCameraLineImage = PinholeLine(PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth, Point3d(-200, -200, -200), Point3d(0, 100, 200),  1000, 1.5);
+	PinholeCameraLineImage = PinholeLine(PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth, a, b, 1000, 500);
+	PinholeCameraLineImage = PinholeLine(PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth, e, f, 1000, 500);
 
 	// Pinhole Camera - Rectangle 3D Projection
 	const int PinholeRectangleImageHeight = 768;
 	const int PinholeRectangleImageWidth = 1024;
 
 	int** PinholeCameraRectangleImage = IntAlloc2(PinholeRectangleImageHeight, PinholeRectangleImageWidth);
-	PinholeCameraRectangleImage = PinholeParallelogram(PinholeCameraRectangleImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, Point3d(-200, -150, -300), Point3d(200, 30, 40), Point3d(10, 100, 450), 30);
+	PinholeCameraRectangleImage = PinholeParallelogram(PinholeCameraRectangleImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, c, b, h, 500);
 
 	// Pinhole Camera - Filled Rectangle 3D Projection
 	const int PinholeRectangleFilledImageHeight = 768;
 	const int PinholeRectangleFilledImageWidth = 1024;
 
 	int** PinholeCameraRectangleFilledImage = IntAlloc2(PinholeRectangleImageHeight, PinholeRectangleImageWidth);
-	PinholeCameraRectangleFilledImage = PinholeParallelogramFilled(PinholeCameraRectangleFilledImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, Point3d(-200, -150, -300), Point3d(200, 30, 40), Point3d(10, 100, 450), 1);
+	PinholeCameraRectangleFilledImage = PinholeParallelogramFilled(PinholeCameraRectangleFilledImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, d, c, f, 10, 500);
 
 	// Rendering Image
 	const int RenderingHeight = 768;
 	const int RenderingWidth = 1024;
 
 	int** RenderingImage = IntAlloc2(RenderingHeight, RenderingWidth);
-	RenderingImage = RenderImage(RenderingImage, RenderingHeight, RenderingWidth, OriginalImage, Height, Width, Point3d(-200, -150, -300), Point3d(200, 30, -40), Point3d(10, 100, -450));
+	RenderingImage = RenderImage(RenderingImage, RenderingHeight, RenderingWidth, OriginalImage, Height, Width, a, b, e, 450);
 
 	// Cube Rendering
-	Point3d a, b, c, d, e, f, g, h;
-	a = Point3d(0, -100, 500);
-	b = Point3d(200, 0, 700);
-	c = Point3d(0, 100, 900);
-	d = Point3d(-200, 0, 700);
-	e = Point3d(0, -300, 500);
-	f = Point3d(200, -200, 700);
-	g = Point3d(0, -100, 900);
-	h = Point3d(-200, -200, 700);
-
 	const int CubeImageHeight = 768;
 	const int CubeImageWidth = 1024;
 
 	int** CubeImage = IntAlloc2(CubeImageHeight, CubeImageWidth);
-	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, -a, -b, -e);
-	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, -a, -d, -e);
-	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, -a, -b, -d);
+	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, d, a, h, 500);
+	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, f, e, b, 500);
+	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, a, b, d, 500);
 
 	/** Show Image */
 	ImageShow("Original Image", OriginalImage, Height, Width);
