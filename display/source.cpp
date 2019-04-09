@@ -408,6 +408,7 @@ int** PinholeLine(int** Image, double Height, double Width, Point3d p, Point3d q
 	for (double t = 0; t < 1; t += (double)1/ DotNumber)
 	{
 		Point3d point_target = p + t*(q - p);
+		if (point_target.z == 0) point_target.z = 0.0001;
 
 		Point3d point_projected = Affine(point_target, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance, Width / 2, Height / 2);
 		if (point_projected.x >= Width - 1 || point_projected.x < 0 || point_projected.y >= Height - 1 || point_projected.y < 0) continue;
@@ -477,6 +478,7 @@ int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point
 		for (double q = 0; q < 1; q += (double)1 / (MLength * Density))
 		{
 			Point3d point_target = o + t*(n - o) + q*(m - o);
+			if (point_target.z == 0) point_target.z = 0.0001;
 
 			Point3d point_projected = Affine(point_target, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance, Width / 2, Height / 2);
 			if (point_projected.x >= Width - 1 || point_projected.x < 0 || point_projected.y >= Height - 1 || point_projected.y < 0) continue;
@@ -513,12 +515,37 @@ int** RenderImage(int** ImageDest, double HeightDest, double WidthDest, int** Im
 		for (int x = 0; x < WidthSrc; x++)
 		{
 			Point3d point_target = o + (n - o)*x / WidthSrc + (m - o)*y / HeightSrc;
+			if (point_target.z == 0) point_target.z = 0.0001;
 
 			Point3d point_projected = Affine(point_target, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance / point_target.z, 0, 0, 0, PlaneDistance, WidthDest / 2, HeightDest / 2);
 			if (point_projected.x >= WidthDest - 1 || point_projected.x < 0 || point_projected.y >= HeightDest - 1 || point_projected.y < 0) continue;
 			ImageOut[(int)(point_projected.y + 0.5)][(int)(point_projected.x + 0.5)] = ImageSrc[y][x];
 		}
 	}
+
+	return ImageOut;
+}
+
+/** Down size the image to 1/2
+* @param Image image to down size
+* @param Height height of image to down size
+* @param Width width of image to down size
+
+* @description refer to resource file: "Down Sampling.png"
+*/
+int** DownSampling2(int** Image, int Height, int Width)
+{
+	int** ImageOut = IntAlloc2(Height/2, Width/2);
+	
+	for(int y = 0; y < Height/2; y++)
+		for (int x = 0; x < Width/2; x++)
+		{
+			int target_x = x * 2;
+			int target_y = y * 2;
+			int value = (Image[target_y][target_x] + Image[target_y][target_x + 1] + Image[target_y + 1][target_x] + Image[target_y + 1][target_x + 1]) / 4;
+
+			ImageOut[y][x] = value;
+		}
 
 	return ImageOut;
 }
@@ -613,6 +640,24 @@ int main()
 	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, d, a, h, 500);
 	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, f, e, b, 500);
 	CubeImage = RenderImage(CubeImage, CubeImageHeight, CubeImageWidth, OriginalImage, Height, Width, a, b, d, 500);
+	CubeImage = PinholeLine(CubeImage, CubeImageHeight, CubeImageWidth, Point3d(-100, 0, 0.1), Point3d(100, 0, 0.1), 2000, 1, 128);
+	CubeImage = PinholeLine(CubeImage, CubeImageHeight, CubeImageWidth, Point3d(0, -100, 0.1), Point3d(0, 100, 0.1), 2000, 1, 128);
+	CubeImage = PinholeLine(CubeImage, CubeImageHeight, CubeImageWidth, Point3d(0, 0, -100), Point3d(0, 0, 100), 2000, 1, 128);
+
+	/** 2019-04-09 Lecture
+	 * Fractal Encoding
+	  - Template Matching
+	  - Geometric Transform - 8°¡Áö
+	  - Sampling - 0.3 ~ 1.0
+	  - Down Sampling
+	  - Æò±Õ°ª + Æò±ÕÁ¦°Å
+
+	 * Fractal Decoding
+	 */
+
+	// Down Sampling
+	int** DownSamplingImage = IntAlloc2(Height/2, Width/2);
+	DownSamplingImage = DownSampling2(OriginalImage, Height, Width);
 
 	/** Show Image */
 	ImageShow("Original Image", OriginalImage, Height, Width);
@@ -625,6 +670,7 @@ int main()
 	ImageShow("Pinhole Camera - Rectangle Filled Image", PinholeCameraRectangleFilledImage, PinholeRectangleFilledImageHeight, PinholeRectangleFilledImageWidth);
 	ImageShow("Pinhole Camera - Rendering Image", RenderingImage, RenderingHeight, RenderingWidth);
 	ImageShow("Cube Image Projection", CubeImage, CubeImageHeight, CubeImageWidth);
+	ImageShow("Down Sampling Image", DownSamplingImage, Height / 2, Width / 2);
 
 	return 0;
 }
