@@ -489,19 +489,19 @@ int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point
 }
 
 /** Transform 3D Parallelogram to 2D Parallelogram & Show transformed image
-* @param ImageDest image which 3D image is projected to
-* @param HeightDest height of image to show
-* @param WidthDest width of image to show
-* @param ImageSrc image to project
-* @param HeightSrc height of image to project
-* @param WidthSrc width of image to project
-* @param o,n,m coordinate for cornor of parallelogram
-* @param Density density of dots (the bigger this value is, the more dense dots composing arallelogram is)
-* @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
-* @param brightness brightness of dot marked on image
+ * @param ImageDest image which 3D image is projected to
+ * @param HeightDest height of image to show
+ * @param WidthDest width of image to show
+ * @param ImageSrc image to project
+ * @param HeightSrc height of image to project
+ * @param WidthSrc width of image to project
+ * @param o,n,m coordinate for cornor of parallelogram
+ * @param Density density of dots (the bigger this value is, the more dense dots composing arallelogram is)
+ * @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
+ * @param brightness brightness of dot marked on image
 
-* @description refer to resource file: "Pinhole Camera.pptx"
-*/
+ * @description refer to resource file: "Pinhole Camera.pptx"
+ */
 int** RenderImage(int** ImageDest, double HeightDest, double WidthDest, int** ImageSrc, double HeightSrc, double WidthSrc, Point3d o, Point3d n, Point3d m, double PlaneDistance = 300, uint8_t brightness = 255)
 {
 	int** ImageOut = ImageDest;
@@ -527,12 +527,12 @@ int** RenderImage(int** ImageDest, double HeightDest, double WidthDest, int** Im
 }
 
 /** Down size the image to 1/2
-* @param Image image to down size
-* @param Height height of image to down size
-* @param Width width of image to down size
+ * @param Image image to down size
+ * @param Height height of image to down size
+ * @param Width width of image to down size
 
-* @description refer to resource file: "Down Sampling.png"
-*/
+ * @description refer to resource file: "Down Sampling.png"
+ */
 int** DownSampling2(int** Image, int Height, int Width)
 {
 	int** ImageOut = IntAlloc2(Height/2, Width/2);
@@ -550,6 +550,39 @@ int** DownSampling2(int** Image, int Height, int Width)
 	return ImageOut;
 }
 
+#define MIN(a, b) (a < b ? a : b)
+/** Find coordinate of block that matches with template 'Block'
+ * @param Image image to find matching
+ * @param Height height of 'Image'
+ * @param Width width of 'Image'
+ * @param Block image which has pattern to find in 'Image'
+ * @param HeightBlock height of block image
+ * @param WidthBlock width of block image
+ */
+Point2d TemplateMatching(int** Image, int Height, int Width, int** Block, int HeightBlock, int WidthBlock)
+{
+	const int ListHeight = Height - HeightBlock + 1;
+	const int ListWidth = Width - WidthBlock + 1;
+	int** ErrorList = IntAlloc2(ListHeight, ListWidth);
+
+	for (int b = 0; b < ListHeight; b++)
+		for (int a = 0; a < ListWidth; a++)
+			for (int y = 0; y < HeightBlock; y++)
+				for (int x = 0; x < WidthBlock; x++)
+					ErrorList[b][a] += abs(Image[y + b][x + a] - Block[y][x]);
+
+	Point2d MatchPoint = Point2d(0, 0);
+	for (int y = 0; y < ListHeight; y++)
+		for (int x = 0; x < ListWidth; x++)
+			if (ErrorList[(int)MatchPoint.y][(int)MatchPoint.x] > ErrorList[y][x])
+			{
+				MatchPoint.x = x;
+				MatchPoint.y = y;
+			}
+
+	return MatchPoint;
+}
+
 int main()
 {
 	/** Image Pointer */
@@ -563,7 +596,7 @@ int main()
 	int Height, Width;
 
 	/** Initialize */
-	OriginalImage = ReadImage("koala.jpg", &Height, &Width);
+	OriginalImage = ReadImage("Koala.bmp", &Height, &Width);
 	DrawingImage = IntAlloc2(Height, Width);
 	AffinedImage = IntAlloc2(Height, Width);
 	BilinearInterpolationImage = IntAlloc2(Height, Width);
@@ -659,6 +692,25 @@ int main()
 	int** DownSamplingImage = IntAlloc2(Height/2, Width/2);
 	DownSamplingImage = DownSampling2(OriginalImage, Height, Width);
 
+	// Template Matching
+	int TemplateHeight;
+	int TemplateWidth;
+
+	int** TemplateImage = ReadImage("template.bmp", &TemplateHeight, &TemplateWidth);
+	int** MatchMarkingImage = IntAlloc2(Height, Width);
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+			MatchMarkingImage[y][x] = OriginalImage[y][x];
+
+	Point2d point = TemplateMatching(OriginalImage, Height, Width, TemplateImage, TemplateHeight, TemplateWidth);
+	for (int y = point.y; y < point.y + TemplateHeight; y++)
+	{
+		for (int x = point.x; x < point.x + TemplateWidth; x++)
+		{
+			MatchMarkingImage[y][x] = 255;
+		}
+	}
+
 	/** Show Image */
 	ImageShow("Original Image", OriginalImage, Height, Width);
  	ImageShow("Drawing Image", DrawingImage, Height, Width);
@@ -671,6 +723,7 @@ int main()
 	ImageShow("Pinhole Camera - Rendering Image", RenderingImage, RenderingHeight, RenderingWidth);
 	ImageShow("Cube Image Projection", CubeImage, CubeImageHeight, CubeImageWidth);
 	ImageShow("Down Sampling Image", DownSamplingImage, Height / 2, Width / 2);
+	ImageShow("Template Matching Image", MatchMarkingImage, Height, Width);
 
 	return 0;
 }
