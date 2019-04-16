@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <malloc.h>
+#include <chrono>
 
 #include <opencv2/opencv.hpp>   
 #include <opencv2/core/core.hpp>   
@@ -583,8 +584,54 @@ Point2d TemplateMatching(int** Image, int Height, int Width, int** Block, int He
 	return MatchPoint;
 }
 
+class Timer
+{
+public:
+	void start()
+	{
+		m_StartTime = std::chrono::system_clock::now();
+		m_bRunning = true;
+	}
+
+	void stop()
+	{
+		m_EndTime = std::chrono::system_clock::now();
+		m_bRunning = false;
+	}
+
+	double elapsedMilliseconds()
+	{
+		std::chrono::time_point<std::chrono::system_clock> endTime;
+
+		if (m_bRunning)
+		{
+			endTime = std::chrono::system_clock::now();
+		}
+		else
+		{
+			endTime = m_EndTime;
+		}
+
+		return std::chrono::duration_cast<std::chrono::milliseconds>(endTime - m_StartTime).count();
+	}
+
+	double elapsedSeconds()
+	{
+		return elapsedMilliseconds() / 1000.0;
+	}
+
+private:
+	std::chrono::time_point<std::chrono::system_clock> m_StartTime;
+	std::chrono::time_point<std::chrono::system_clock> m_EndTime;
+	bool                                               m_bRunning = false;
+};
+
 int main()
 {
+	Timer Clock;
+	Clock.start();
+	double LastTime = 0;
+
 	/** Image Pointer */
 	int** OriginalImage;
 	int** DrawingImage;
@@ -607,6 +654,8 @@ int main()
 	// Drawing Circle
 	DrawingImage = DrawCircle(OriginalImage, Height, Width, 200, 200, 80, 220);
 	DrawingImage = DrawCircle(OriginalImage, Height, Width, 350, 350, 40, 120);
+	std::cout << "Drawing Circle: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 	
 	// Affine Transform
 	for (int y = 0; y < Height - 1; y++)
@@ -618,12 +667,18 @@ int main()
 			if (point_out.y > Height - 1 || point_out.y < 0 || point_out.x > Width - 1 || point_out.x < 0) continue;
 			AffinedImage[(int)(point_out.y+0.5)][(int)(point_out.x+0.5)] = OriginalImage[y][x];
 		}
+	std::cout << "Affine Transform: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 
 	// Bilinear Interpolaion
 	BilinearInterpolationImage = BilinearInterpolation(OriginalImage, Height, Width, 1.5, 0, 0, 1.5);
+	std::cout << "Bilinear Interpolation: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 	
 	// Rotation Transform
 	RotatedImage = RotationTransform(OriginalImage, Height, Width, 45, Height/2, Width/2);
+	std::cout << "Rotation Transform: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 
 	// 3D Coordinate
 	Point3d a, b, c, d, e, f, g, h;
@@ -643,6 +698,8 @@ int main()
 	int** PinholeCameraLineImage = IntAlloc2(PinholeLineImageHeight, PinholeLineImageWidth);
 	PinholeCameraLineImage = PinholeLine(PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth, a, b, 1000, 500);
 	PinholeCameraLineImage = PinholeLine(PinholeCameraLineImage, PinholeLineImageHeight, PinholeLineImageWidth, e, f, 1000, 500);
+	std::cout << "Pinhole Camera - Line 3D Projection: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 
 	// Pinhole Camera - Rectangle 3D Projection
 	const int PinholeRectangleImageHeight = 768;
@@ -650,6 +707,8 @@ int main()
 
 	int** PinholeCameraRectangleImage = IntAlloc2(PinholeRectangleImageHeight, PinholeRectangleImageWidth);
 	PinholeCameraRectangleImage = PinholeParallelogram(PinholeCameraRectangleImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, c, b, h, 500);
+	std::cout << "Pinhole Camera - Rectangle 3D Projection: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 
 	// Pinhole Camera - Filled Rectangle 3D Projection
 	const int PinholeRectangleFilledImageHeight = 768;
@@ -657,6 +716,8 @@ int main()
 
 	int** PinholeCameraRectangleFilledImage = IntAlloc2(PinholeRectangleImageHeight, PinholeRectangleImageWidth);
 	PinholeCameraRectangleFilledImage = PinholeParallelogramFilled(PinholeCameraRectangleFilledImage, PinholeRectangleImageHeight, PinholeRectangleImageWidth, d, c, f, 10, 500);
+	std::cout << "Pinhole Camera - Filled Rectangle 3D Projection: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 
 	// Rendering Image
 	const int RenderingHeight = 768;
@@ -664,6 +725,8 @@ int main()
 
 	int** RenderingImage = IntAlloc2(RenderingHeight, RenderingWidth);
 	RenderingImage = RenderImage(RenderingImage, RenderingHeight, RenderingWidth, OriginalImage, Height, Width, a, b, e, 450);
+	std::cout << "Rendering Image: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 
 	// Cube Rendering
 	const int CubeImageHeight = 768;
@@ -676,6 +739,8 @@ int main()
 	CubeImage = PinholeLine(CubeImage, CubeImageHeight, CubeImageWidth, Point3d(-100, 0, 0.1), Point3d(100, 0, 0.1), 2000, 1, 128);
 	CubeImage = PinholeLine(CubeImage, CubeImageHeight, CubeImageWidth, Point3d(0, -100, 0.1), Point3d(0, 100, 0.1), 2000, 1, 128);
 	CubeImage = PinholeLine(CubeImage, CubeImageHeight, CubeImageWidth, Point3d(0, 0, -100), Point3d(0, 0, 100), 2000, 1, 128);
+	std::cout << "Cube Rendering: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 
 	/** 2019-04-09 Lecture
 	 * Fractal Encoding
@@ -691,6 +756,8 @@ int main()
 	// Down Sampling
 	int** DownSamplingImage = IntAlloc2(Height/2, Width/2);
 	DownSamplingImage = DownSampling2(OriginalImage, Height, Width);
+	std::cout << "Down Sampling: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 
 	// Template Matching
 	int TemplateHeight;
@@ -710,6 +777,60 @@ int main()
 			MatchMarkingImage[y][x] = 255;
 		}
 	}
+	std::cout << "Template Matching: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
+
+	// Flipped Template Matching
+	#define N 16
+	int FlippedTemplateHeight;
+	int FlippedTemplateWidth;
+
+	int** FlippedTemplateImage = ReadImage("template(flipping).bmp", &FlippedTemplateHeight, &FlippedTemplateWidth);
+	int** FlippedMatchMarkingImage[8];
+	int** ReflippedTemplateImage[8];
+
+	for (int i = 0; i < 8; i++)
+	{
+		FlippedMatchMarkingImage[i] = IntAlloc2(Height, Width);
+		ReflippedTemplateImage[i] = IntAlloc2(FlippedTemplateHeight, FlippedTemplateWidth);
+		for (int y = 0; y < Height; y++)
+		{
+			for (int x = 0; x < Width; x++)
+			{
+				FlippedMatchMarkingImage[i][y][x] = OriginalImage[y][x];
+			}
+		}
+	}
+
+	for (int y = 0; y < FlippedTemplateHeight; y++)
+	{
+		for (int x = 0; x < FlippedTemplateWidth; x++)
+		{
+			ReflippedTemplateImage[0][y][x] = FlippedTemplateImage[y][x];
+			ReflippedTemplateImage[1][y][x] = FlippedTemplateImage[N - 1 - y][x];
+			ReflippedTemplateImage[2][y][x] = FlippedTemplateImage[y][N - 1 - x];
+			ReflippedTemplateImage[3][y][x] = FlippedTemplateImage[N - 1 - y][N - 1 - x];
+			ReflippedTemplateImage[4][y][x] = FlippedTemplateImage[x][y];
+			ReflippedTemplateImage[5][y][x] = FlippedTemplateImage[N - 1 - x][y];
+			ReflippedTemplateImage[6][y][x] = FlippedTemplateImage[x][N - 1 - y];
+			ReflippedTemplateImage[7][y][x] = FlippedTemplateImage[N - 1 - x][N - 1 - y];
+		}
+	}
+
+	Point2d point_flip[8];
+	for (int i = 0; i < 8; i++)
+	{
+		point_flip[i] = TemplateMatching(OriginalImage, Height, Width, ReflippedTemplateImage[i], FlippedTemplateHeight, FlippedTemplateWidth);
+		for (int y = point_flip[i].y; y < point_flip[i].y + FlippedTemplateHeight; y++)
+		{
+			for (int x = point_flip[i].x; x < point_flip[i].x + FlippedTemplateWidth; x++)
+			{
+				FlippedMatchMarkingImage[i][y][x] = 255;
+			}
+		}
+	}
+	std::cout << "Flipped Template Matching: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl << std::endl;
+	std::cout << "Total Time used for Image Processing: " << Clock.elapsedSeconds() << " second" << std::endl;
 
 	/** Show Image */
 	ImageShow("Original Image", OriginalImage, Height, Width);
@@ -724,6 +845,7 @@ int main()
 	ImageShow("Cube Image Projection", CubeImage, CubeImageHeight, CubeImageWidth);
 	ImageShow("Down Sampling Image", DownSamplingImage, Height / 2, Width / 2);
 	ImageShow("Template Matching Image", MatchMarkingImage, Height, Width);
+	for (int i = 0; i < 8; i++) ImageShow("Reflipped Template Matching Image", FlippedMatchMarkingImage[i], Height, Width);
 
 	return 0;
 }
