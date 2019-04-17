@@ -2,10 +2,10 @@
 c:\users\user5\desktop\image-processing\display\source.cpp(387): warning C4244: '인수': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 c:\users\user5\desktop\image-processing\display\source.cpp(554): warning C4005: 'MIN': 매크로 재정의
   c:\opencv\build\include\opencv2\core\cvdef.h(337): note: 'MIN'의 이전 정의를 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(615): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(773): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(775): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(824): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(826): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(619): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(777): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(779): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(829): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(831): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
   display.vcxproj -> C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.exe
   display.vcxproj -> C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.pdb (Full PDB)

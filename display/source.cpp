@@ -559,8 +559,11 @@ int** DownSampling2(int** Image, int Height, int Width)
  * @param Block image which has pattern to find in 'Image'
  * @param HeightBlock height of block image
  * @param WidthBlock width of block image
+
+ * @return Point3d.x,Point3d.y coordinate of location that error value is smallest
+ * @return Point3d.z error value of (x, y) location
  */
-Point2d TemplateMatching(int** Image, int Height, int Width, int** Block, int HeightBlock, int WidthBlock)
+Point3d TemplateMatching(int** Image, int Height, int Width, int** Block, int HeightBlock, int WidthBlock)
 {
 	const int ListHeight = Height - HeightBlock + 1;
 	const int ListWidth = Width - WidthBlock + 1;
@@ -572,13 +575,14 @@ Point2d TemplateMatching(int** Image, int Height, int Width, int** Block, int He
 				for (int x = 0; x < WidthBlock; x++)
 					ErrorList[b][a] += abs(Image[y + b][x + a] - Block[y][x]);
 
-	Point2d MatchPoint = Point2d(0, 0);
+	Point3d MatchPoint = Point3d(0, 0, 0);
 	for (int y = 0; y < ListHeight; y++)
 		for (int x = 0; x < ListWidth; x++)
 			if (ErrorList[(int)MatchPoint.y][(int)MatchPoint.x] > ErrorList[y][x])
 			{
 				MatchPoint.x = x;
 				MatchPoint.y = y;
+				MatchPoint.z = ErrorList[y][x];
 			}
 
 	return MatchPoint;
@@ -769,7 +773,7 @@ int main()
 		for (int x = 0; x < Width; x++)
 			MatchMarkingImage[y][x] = OriginalImage[y][x];
 
-	Point2d point = TemplateMatching(OriginalImage, Height, Width, TemplateImage, TemplateHeight, TemplateWidth);
+	Point3d point = TemplateMatching(OriginalImage, Height, Width, TemplateImage, TemplateHeight, TemplateWidth);
 	for (int y = point.y; y < point.y + TemplateHeight; y++)
 	{
 		for (int x = point.x; x < point.x + TemplateWidth; x++)
@@ -817,7 +821,8 @@ int main()
 		}
 	}
 
-	Point2d point_flip[8];
+	Point3d point_flip[8];
+	std::cout << "====================Template Matching Error Value====================" << std::endl;
 	for (int i = 0; i < 8; i++)
 	{
 		point_flip[i] = TemplateMatching(OriginalImage, Height, Width, ReflippedTemplateImage[i], FlippedTemplateHeight, FlippedTemplateWidth);
@@ -828,7 +833,10 @@ int main()
 				FlippedMatchMarkingImage[i][y][x] = 255;
 			}
 		}
+		
+		std::cout << "[" << i << "] " << point_flip[i].z << std::endl;
 	}
+	std::cout << "=====================================================================" << std::endl;
 	std::cout << "Flipped Template Matching: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl << std::endl;
 	std::cout << "Total Time used for Image Processing: " << Clock.elapsedSeconds() << " second" << std::endl;
 
