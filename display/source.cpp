@@ -853,7 +853,19 @@ int main()
 	ImageShow("Cube Image Projection", CubeImage, CubeImageHeight, CubeImageWidth);
 	ImageShow("Down Sampling Image", DownSamplingImage, Height / 2, Width / 2);
 	ImageShow("Template Matching Image", MatchMarkingImage, Height, Width);
-	for (int i = 0; i < 8; i++) ImageShow("Reflipped Template Matching Image", FlippedMatchMarkingImage[i], Height, Width);
+	for (int i = 0; i < 8; i++) // Show Reflipped Template Matching Image
+	{
+		char Title[100];
+		char NumberString[100];
+
+		// make title string
+		itoa(i, NumberString, 10);
+		strcpy(Title, "Reflipped Template Matching Image ");
+		strcat(Title, NumberString);
+
+		// show flipped match marking image
+		ImageShow(Title, FlippedMatchMarkingImage[i], Height, Width);
+	}
 
 	return 0;
 }
