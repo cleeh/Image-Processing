@@ -2,16 +2,25 @@
 c:\users\user5\desktop\image-processing\display\source.cpp(387): warning C4244: '인수': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 c:\users\user5\desktop\image-processing\display\source.cpp(554): warning C4005: 'MIN': 매크로 재정의
   c:\opencv\build\include\opencv2\core\cvdef.h(337): note: 'MIN'의 이전 정의를 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(619): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(777): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(779): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(829): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(831): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(862): warning C4996: 'itoa': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _itoa. See online help for details.
+c:\users\user5\desktop\image-processing\display\source.cpp(632): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(665): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(823): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(824): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(866): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(867): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\user5\desktop\image-processing\display\source.cpp(914): warning C4996: 'itoa': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _itoa. See online help for details.
   c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdlib.h(1316): note: 'itoa' 선언을 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(863): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+c:\users\user5\desktop\image-processing\display\source.cpp(915): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(119): note: 'strcpy' 선언을 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(864): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+c:\users\user5\desktop\image-processing\display\source.cpp(916): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(90): note: 'strcat' 선언을 참조하십시오.
+c:\users\user5\desktop\image-processing\display\source.cpp(928): warning C4996: 'itoa': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _itoa. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdlib.h(1316): note: 'itoa' 선언을 참조하십시오.
+c:\users\user5\desktop\image-processing\display\source.cpp(929): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(119): note: 'strcpy' 선언을 참조하십시오.
+c:\users\user5\desktop\image-processing\display\source.cpp(930): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(90): note: 'strcat' 선언을 참조하십시오.
+c:\users\user5\desktop\image-processing\display\source.cpp(931): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(90): note: 'strcat' 선언을 참조하십시오.
   display.vcxproj -> C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.exe
   display.vcxproj -> C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.pdb (Full PDB)

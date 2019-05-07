@@ -588,6 +588,52 @@ Point3d TemplateMatching(int** Image, int Height, int Width, int** Block, int He
 	return MatchPoint;
 }
 
+/** Get average value of brightness of block in 'Image'
+ * @param Image block source image
+ * @param Height height of 'Image'
+ * @param Width width of 'Image'
+ * @param Spot (x, y) coordinate of block in image
+ * @param N height & width of block
+
+ * @return Average value of brightness of block in 'Image'
+ */
+double GetAverageBrightness(int** Image, int Height, int Width, Point2i Spot, int N)
+{
+	int Total = 0;
+	for (int y = Spot.y; y < Spot.y + N; y++)
+	{
+		for (int x = Spot.x; x < Spot.x + N; x++)
+		{
+			if (x < 0 || x >= Width || y < 0 || y >= Height) { 
+				continue; }
+			Total += Image[y][x];
+		}
+	}
+
+	return Total / (N * N);
+}
+
+/** Down size the image to 1/N
+ * @param Image image to down size
+ * @param Height height of image to down size
+ * @param Width width of image to down size
+ * @param N downsampling ratio
+
+ * @description refer to resource file: "Down Sampling.png"
+ */
+int** DownSampling(int** Image, int Height, int Width, int N)
+{	int** ImageOut;
+	int HeightOut = Height / N;
+	int WidthOut = Width / N;
+
+	ImageOut = IntAlloc2(HeightOut, WidthOut);
+	for (int y = 0; y < HeightOut; y++)
+		for (int x = 0; x < WidthOut; x++)
+			ImageOut[y][x] = GetAverageBrightness(Image, Height, Width, Point2i(x * N, y * N), N);
+
+	return ImageOut;
+}
+
 class Timer
 {
 public:
@@ -757,10 +803,10 @@ int main()
 	 * Fractal Decoding
 	 */
 
-	// Down Sampling
-	int** DownSamplingImage = IntAlloc2(Height/2, Width/2);
-	DownSamplingImage = DownSampling2(OriginalImage, Height, Width);
-	std::cout << "Down Sampling: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	// Down Sampling 1/2
+	int** DownSampling2Image = IntAlloc2(Height/2, Width/2);
+	DownSampling2Image = DownSampling2(OriginalImage, Height, Width);
+	std::cout << "Down Sampling 1/2: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
 	LastTime = Clock.elapsedSeconds();
 
 	// Template Matching
@@ -775,12 +821,9 @@ int main()
 
 	Point3d point = TemplateMatching(OriginalImage, Height, Width, TemplateImage, TemplateHeight, TemplateWidth);
 	for (int y = point.y; y < point.y + TemplateHeight; y++)
-	{
 		for (int x = point.x; x < point.x + TemplateWidth; x++)
-		{
 			MatchMarkingImage[y][x] = 255;
-		}
-	}
+
 	std::cout << "Template Matching: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
 	LastTime = Clock.elapsedSeconds();
 
@@ -798,16 +841,11 @@ int main()
 		FlippedMatchMarkingImage[i] = IntAlloc2(Height, Width);
 		ReflippedTemplateImage[i] = IntAlloc2(FlippedTemplateHeight, FlippedTemplateWidth);
 		for (int y = 0; y < Height; y++)
-		{
 			for (int x = 0; x < Width; x++)
-			{
 				FlippedMatchMarkingImage[i][y][x] = OriginalImage[y][x];
-			}
-		}
 	}
 
 	for (int y = 0; y < FlippedTemplateHeight; y++)
-	{
 		for (int x = 0; x < FlippedTemplateWidth; x++)
 		{
 			ReflippedTemplateImage[0][y][x] = FlippedTemplateImage[y][x];
@@ -819,7 +857,6 @@ int main()
 			ReflippedTemplateImage[6][y][x] = FlippedTemplateImage[x][N - 1 - y];
 			ReflippedTemplateImage[7][y][x] = FlippedTemplateImage[N - 1 - x][N - 1 - y];
 		}
-	}
 
 	Point3d point_flip[8];
 	std::cout << "====================Template Matching Error Value====================" << std::endl;
@@ -827,17 +864,32 @@ int main()
 	{
 		point_flip[i] = TemplateMatching(OriginalImage, Height, Width, ReflippedTemplateImage[i], FlippedTemplateHeight, FlippedTemplateWidth);
 		for (int y = point_flip[i].y; y < point_flip[i].y + FlippedTemplateHeight; y++)
-		{
 			for (int x = point_flip[i].x; x < point_flip[i].x + FlippedTemplateWidth; x++)
-			{
 				FlippedMatchMarkingImage[i][y][x] = 255;
-			}
-		}
 		
 		std::cout << "[" << i << "] " << point_flip[i].z << std::endl;
 	}
 	std::cout << "=====================================================================" << std::endl;
-	std::cout << "Flipped Template Matching: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl << std::endl;
+	std::cout << "Flipped Template Matching: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
+
+	// Generic Down Sampling
+#define DOWNSAMPLING_NUMBER 10
+	int DownSamplingImageHeight = 500;
+	int DownSamplingImageWidth = 1000;
+	int** DownSamplingImage = IntAlloc2(DownSamplingImageHeight, DownSamplingImageWidth);
+	int** Result[DOWNSAMPLING_NUMBER];
+
+	for (int y = 0; y < DownSamplingImageHeight; y++)
+		for (int x = 0; x < DownSamplingImageWidth; x++)
+			DownSamplingImage[y][x] = x * y % 255;
+
+	for (int i = 0; i < DOWNSAMPLING_NUMBER; i++)
+	{
+		Result[i] = IntAlloc2(DownSamplingImageHeight, DownSamplingImageWidth);
+		Result[i] = DownSampling(DownSamplingImage, DownSamplingImageHeight, DownSamplingImageWidth, i + 1);
+	}
+	std::cout << "Generic Down Sampling: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl << std::endl;
 	std::cout << "Total Time used for Image Processing: " << Clock.elapsedSeconds() << " second" << std::endl;
 
 	/** Show Image */
@@ -851,9 +903,9 @@ int main()
 	ImageShow("Pinhole Camera - Rectangle Filled Image", PinholeCameraRectangleFilledImage, PinholeRectangleFilledImageHeight, PinholeRectangleFilledImageWidth);
 	ImageShow("Pinhole Camera - Rendering Image", RenderingImage, RenderingHeight, RenderingWidth);
 	ImageShow("Cube Image Projection", CubeImage, CubeImageHeight, CubeImageWidth);
-	ImageShow("Down Sampling Image", DownSamplingImage, Height / 2, Width / 2);
+	ImageShow("Down Sampling Image", DownSampling2Image, Height / 2, Width / 2);
 	ImageShow("Template Matching Image", MatchMarkingImage, Height, Width);
-	for (int i = 0; i < 8; i++) // Show Reflipped Template Matching Image
+	for (int i = 0; i < 8; i++) // Show Reflipped Template Matching Images
 	{
 		char Title[100];
 		char NumberString[100];
@@ -865,6 +917,22 @@ int main()
 
 		// show flipped match marking image
 		ImageShow(Title, FlippedMatchMarkingImage[i], Height, Width);
+	}
+	ImageShow("Image to \'Downsample\'", DownSamplingImage, DownSamplingImageHeight, DownSamplingImageWidth);
+	for (int i = 0; i < DOWNSAMPLING_NUMBER; i++) // Show Downsampled Images
+	{
+		char Title[100];
+		char NumberString[100];
+
+		// make title string
+		itoa(i, NumberString, 10);
+		strcpy(Title, "Downsampling (Ratio: ");
+		strcat(Title, NumberString);
+		strcat(Title, ")");
+
+		// process & show images
+
+		ImageShow(Title, Result[i], DownSamplingImageHeight / (i + 1), DownSamplingImageWidth / (i + 1));
 	}
 
 	return 0;
