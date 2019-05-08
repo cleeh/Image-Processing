@@ -634,6 +634,57 @@ int** DownSampling(int** Image, int Height, int Width, int N)
 	return ImageOut;
 }
 
+/** Down size the image to 1/N
+ * @param Image image to down size
+ * @param Height height of image to down size
+ * @param Width width of image to down size
+ * @param Spot origin coordinate of starting point of block
+ * @param HeightBlock height of block
+ * @param WidthBlock width of block
+ */
+int** ReadBlock(int** Image, int Height, int Width, Point2i Spot, int HeightBlock, int WidthBlock)
+{
+	int** ImageOut = IntAlloc2(HeightBlock, WidthBlock);
+
+	for (int y = 0; y < HeightBlock; y++)
+	{
+		for (int x = 0; x < WidthBlock; x++)
+		{
+			ImageOut[y][x] = Image[Spot.y + y][Spot.x + x];
+		}
+	}
+
+	return ImageOut;
+}
+
+/** Down size the image to 1/N
+* @param Image image to down size
+* @param Height height of image to down size
+* @param Width width of image to down size
+* @param ImageSrc writing block on 'ImageDest'
+* @param Spot origin coordinate of starting point of block
+* @param HeightBlock height of block from 'ImageSrc'
+* @param WidthBlock width of block from "ImageSrc'
+*/
+int** WriteBlock(int** ImageDest, int Height, int Width, int** ImageSrc, Point2i Spot, int HeightSrc, int WidthSrc)
+{
+	int** ImageOut = IntAlloc2(Height, Width);
+
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+			ImageOut[y][x] = ImageDest[y][x];
+
+	for (int y = 0; y < HeightSrc; y++)
+		for (int x = 0; x < WidthSrc; x++)
+		{
+			Point2i Target = Point2i(Spot.x + x, Spot.y + y);
+			if (Target.x < 0 || Target.y < 0 || Target.x >= Width || Target.y >= Height) continue;
+			ImageOut[Target.y][Target.x] = ImageSrc[y][x];
+		}
+
+	return ImageOut;
+}
+
 class Timer
 {
 public:
@@ -889,8 +940,14 @@ int main()
 		Result[i] = IntAlloc2(DownSamplingImageHeight, DownSamplingImageWidth);
 		Result[i] = DownSampling(DownSamplingImage, DownSamplingImageHeight, DownSamplingImageWidth, i + 1);
 	}
-	std::cout << "Generic Down Sampling: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl << std::endl;
+	std::cout << "Generic Down Sampling: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+
+	std::cout << "=====================================================================" << std::endl << std::endl;
 	std::cout << "Total Time used for Image Processing: " << Clock.elapsedSeconds() << " second" << std::endl;
+
+	// Reading & Writing Block
+	int** BlockImage = ReadBlock(OriginalImage, Height, Width, Point2i(100, 100), 400, 400);
+	int** WrittenImage = WriteBlock(OriginalImage, Height, Width, DownSamplingImage, Point2i(100, 100), DownSamplingImageHeight, DownSamplingImageWidth);
 
 	/** Show Image */
 	ImageShow("Original Image", OriginalImage, Height, Width);
@@ -934,6 +991,8 @@ int main()
 
 		ImageShow(Title, Result[i], DownSamplingImageHeight / (i + 1), DownSamplingImageWidth / (i + 1));
 	}
+	ImageShow("Reading Block Image", BlockImage, 400, 400);
+	ImageShow("Writing Block Image", WrittenImage, Height, Width);
 
 	return 0;
 }
