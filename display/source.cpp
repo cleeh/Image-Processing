@@ -3,6 +3,7 @@
 #include <math.h>
 #include <malloc.h>
 #include <chrono>
+#include <limits.h>
 
 #include <opencv2/opencv.hpp>   
 #include <opencv2/core/core.hpp>   
@@ -592,46 +593,23 @@ Point3d TemplateMatching(int** Image, int Height, int Width, int** Block, int He
  * @param Image block source image
  * @param Height height of 'Image'
  * @param Width width of 'Image'
- * @param Spot (x, y) coordinate of block in image
- * @param N height & width of block
 
- * @return Average value of brightness of block in 'Image'
+ * @return Average value of brightness of 'Image'
  */
-double GetAverageBrightness(int** Image, int Height, int Width, Point2i Spot, int N)
+double GetAverageBrightness(int** Image, int Height, int Width)
 {
-	int Total = 0;
-	for (int y = Spot.y; y < Spot.y + N; y++)
-	{
-		for (int x = Spot.x; x < Spot.x + N; x++)
+	unsigned int Total = 0;
+
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
 		{
-			if (x < 0 || x >= Width || y < 0 || y >= Height) { 
-				continue; }
+			if (x < 0 || x >= Width || y < 0 || y >= Height)
+				continue;
+
 			Total += Image[y][x];
 		}
-	}
 
-	return Total / (N * N);
-}
-
-/** Down size the image to 1/N
- * @param Image image to down size
- * @param Height height of image to down size
- * @param Width width of image to down size
- * @param N downsampling ratio
-
- * @description refer to resource file: "Down Sampling.png"
- */
-int** DownSampling(int** Image, int Height, int Width, int N)
-{	int** ImageOut;
-	int HeightOut = Height / N;
-	int WidthOut = Width / N;
-
-	ImageOut = IntAlloc2(HeightOut, WidthOut);
-	for (int y = 0; y < HeightOut; y++)
-		for (int x = 0; x < WidthOut; x++)
-			ImageOut[y][x] = GetAverageBrightness(Image, Height, Width, Point2i(x * N, y * N), N);
-
-	return ImageOut;
+	return Total / (Height * Width);
 }
 
 /** Down size the image to 1/N
@@ -650,6 +628,7 @@ int** ReadBlock(int** Image, int Height, int Width, Point2i Spot, int HeightBloc
 	{
 		for (int x = 0; x < WidthBlock; x++)
 		{
+			if (Spot.y + y >= Height || Spot.x + x >= Width) continue;
 			ImageOut[y][x] = Image[Spot.y + y][Spot.x + x];
 		}
 	}
@@ -658,14 +637,14 @@ int** ReadBlock(int** Image, int Height, int Width, Point2i Spot, int HeightBloc
 }
 
 /** Down size the image to 1/N
-* @param Image image to down size
-* @param Height height of image to down size
-* @param Width width of image to down size
-* @param ImageSrc writing block on 'ImageDest'
-* @param Spot origin coordinate of starting point of block
-* @param HeightBlock height of block from 'ImageSrc'
-* @param WidthBlock width of block from "ImageSrc'
-*/
+ * @param Image image to down size
+ * @param Height height of image to down size
+ * @param Width width of image to down size
+ * @param ImageSrc writing block on 'ImageDest'
+ * @param Spot origin coordinate of starting point of block
+ * @param HeightSrc height of block from 'ImageSrc'
+ * @param WidthSrc width of block from "ImageSrc'
+ */
 int** WriteBlock(int** ImageDest, int Height, int Width, int** ImageSrc, Point2i Spot, int HeightSrc, int WidthSrc)
 {
 	int** ImageOut = IntAlloc2(Height, Width);
@@ -685,12 +664,154 @@ int** WriteBlock(int** ImageDest, int Height, int Width, int** ImageSrc, Point2i
 	return ImageOut;
 }
 
+/** Down size the image to 1/N
+ * @param Image image to down size
+ * @param Height height of image to down size
+ * @param Width width of image to down size
+ * @param N downsampling ratio
+
+ * @description refer to resource file: "Down Sampling.png"
+ */
+int** DownSampling(int** Image, int Height, int Width, int N)
+{
+	int** ImageOut;
+	int HeightOut = Height / N;
+	int WidthOut = Width / N;
+
+	ImageOut = IntAlloc2(HeightOut, WidthOut);
+	for (int y = 0; y < HeightOut; y++)
+		for (int x = 0; x < WidthOut; x++)
+			ImageOut[y][x] = GetAverageBrightness(ReadBlock(Image, Height, Width, Point2i(x * N, y * N), N, N), N, N);
+
+	return ImageOut;
+}
+
+/** Get error between 'Image1' and 'Image2'
+ * @param Image1 image to get error
+ * @param Image2 other image to get error
+ * @param Height height of 'Image1' & 'Image2'
+ * @param Width width of 'Image1' & 'Image2'
+ */
+int GetError(int** Image1, int** Image2, int Height, int Width)
+{
+	int Total = 0;
+
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+			Total += abs(Image1[y][x] - Image2[y][x]);
+
+	return Total;
+}
+
+void Encode(int** Image, int Height, int Width, int N)
+{
+	// Factors to save
+	Point2i** MinErrorCoordinate;
+	int** BlockAvg;
+
+	// Error Factor
+	float** ErrorList;
+
+	// Block Factor
+	const int BlockRow = Height / N;
+	const int BlockColumn = Width / N;
+	
+	// DBlock Factor
+	int**** DBlock;
+	int**** DBlock2;
+	int**** DBlock2Mean;
+	const int DBlockRow = Height - 2 * N + 1;
+	const int DBLockColumn = Width - 2 * N + 1;
+
+	// Initialize
+	MinErrorCoordinate = (Point2i**)calloc(BlockRow, sizeof(Point2i**));
+	for (int i = 0; i < BlockColumn; i++) MinErrorCoordinate[i] = (Point2i*)calloc(BlockColumn, sizeof(Point2i*));
+	for(int y = 0; y < BlockRow; y++)
+		for (int x = 0; x < BlockColumn; x++)
+			MinErrorCoordinate[y][x] = Point2i(x, y);
+
+	ErrorList = FloatAlloc2(DBlockRow, DBLockColumn);
+	for (int y = 0; y < DBlockRow; y++)
+		for (int x = 0; x < DBLockColumn; x++)
+			ErrorList[y][x] = 100000000;
+
+	BlockAvg = IntAlloc2(BlockRow, BlockColumn);
+
+	DBlock = (int****)calloc(DBlockRow, sizeof(int***));
+	for (int i = 0; i < DBlockRow; i++)
+		DBlock[i] = (int***)calloc(DBLockColumn, sizeof(int**));
+
+	DBlock2 = (int****)calloc(DBlockRow, sizeof(int***));
+	for (int i = 0; i < DBlockRow; i++)
+		DBlock2[i] = (int***)calloc(DBLockColumn, sizeof(int**));
+
+	DBlock2Mean = (int****)calloc(DBlockRow, sizeof(int***));
+	for (int i = 0; i < DBlockRow; i++)
+		DBlock2Mean[i] = (int***)calloc(DBLockColumn, sizeof(int**));
+
+	printf("==================== Encode ====================\n");
+
+	// Get DBlock & DBlock2 & DBlock2Mean
+	for (int y = 0; y < DBlockRow; y++)
+		for (int x = 0; x < DBLockColumn; x++)
+		{
+			DBlock[y][x] = ReadBlock(Image, Height, Width, Point2i(x, y), 2 * N, 2 * N);
+			DBlock2[y][x] = DownSampling(DBlock[y][x], 2 * N, 2 * N, 2);
+			const int DBlock2Avg = GetAverageBrightness(DBlock2[y][x], N, N);
+			DBlock2Mean[y][x] = IntAlloc2(N, N);
+			for (int b = 0; b < N; b++)
+				for (int a = 0; a < N; a++)
+					DBlock2Mean[y][x][b][a] = DBlock2[y][x][b][a] - DBlock2Avg;
+		}
+	printf("Finished Calculating DBlock\n\n");
+	
+	// Get Minimum Error Coordinate
+	for(int y = 0; y < BlockRow; y++)
+		for (int x = 0; x < BlockColumn; x++)
+		{
+			// get block & it's average
+			int** Block = ReadBlock(Image, Height, Width, Point2i(x, y), N, N);
+			BlockAvg[y][x] = GetAverageBrightness(Block, N, N);
+
+			// get block_means
+			int** BlockMean = IntAlloc2(N, N);
+			for (int b = 0; b < N; b++)
+				for (int a = 0; a < N; a++)
+					BlockMean[b][a] = Block[b][a] - BlockAvg[y][x];
+
+			// get error
+			for(int j = 0; j < DBlockRow; j++)
+				for (int i = 0; i < DBLockColumn; i++)
+					ErrorList[j][i] = GetError(BlockMean, DBlock2Mean[j][i], N, N);
+
+			// get minimum error coordinate
+			for (int j = 0; j < DBlockRow; j++)
+				for (int i = 0; i < DBLockColumn; i++)
+				{
+					if (ErrorList[MinErrorCoordinate[y][x].y][MinErrorCoordinate[y][x].x] > ErrorList[j][i])
+						MinErrorCoordinate[y][x] = Point2i(i, j);
+				}
+
+			printf("Block(%3d, %3d) Minimum Error Coordinate: (%3d, %3d)\n", x * N, y * N, MinErrorCoordinate[y][x].x, MinErrorCoordinate[y][x].y);
+		}
+
+	printf("\n[Block Average]\n");
+	for (int y = 0; y < BlockRow; y++)
+	{
+		for (int x = 0; x < BlockColumn; x++)
+		{
+			printf("%3d ", BlockAvg[y][x]);
+		}
+		printf("\n");
+	}
+}
+
 class Timer
 {
 public:
 	void start()
 	{
-		m_StartTime = std::chrono::system_clock::now();
+		m_StartTime = std::chrono::system_clock::now(); 
 		m_bRunning = true;
 	}
 
@@ -727,6 +848,7 @@ private:
 	bool                                               m_bRunning = false;
 };
 
+#define TEST
 int main()
 {
 	Timer Clock;
@@ -734,6 +856,7 @@ int main()
 	double LastTime = 0;
 
 	/** Image Pointer */
+	int** LenaImage;
 	int** OriginalImage;
 	int** DrawingImage;
 	int** AffinedImage;
@@ -742,8 +865,10 @@ int main()
 
 	/** width, height of image */
 	int Height, Width;
+	int LenaHeight, LenaWidth;
 
 	/** Initialize */
+	LenaImage = ReadImage("LENA256.bmp", &LenaHeight, &LenaWidth);
 	OriginalImage = ReadImage("Koala.bmp", &Height, &Width);
 	DrawingImage = IntAlloc2(Height, Width);
 	AffinedImage = IntAlloc2(Height, Width);
@@ -751,7 +876,7 @@ int main()
 	RotatedImage = IntAlloc2(Height, Width);
 
 	/** Image Processing */
-
+#ifndef TEST
 	// Drawing Circle
 	DrawingImage = DrawCircle(OriginalImage, Height, Width, 200, 200, 80, 220);
 	DrawingImage = DrawCircle(OriginalImage, Height, Width, 350, 350, 40, 120);
@@ -993,6 +1118,13 @@ int main()
 	}
 	ImageShow("Reading Block Image", BlockImage, 400, 400);
 	ImageShow("Writing Block Image", WrittenImage, Height, Width);
+#endif
+
+#ifdef TEST
+
+	Encode(LenaImage, LenaHeight, LenaWidth, 8);
+
+#endif
 
 	return 0;
 }

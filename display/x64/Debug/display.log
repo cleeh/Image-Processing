@@ -1,26 +1,12 @@
 ﻿  source.cpp
-c:\users\user5\desktop\image-processing\display\source.cpp(387): warning C4244: '인수': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(554): warning C4005: 'MIN': 매크로 재정의
-  c:\opencv\build\include\opencv2\core\cvdef.h(337): note: 'MIN'의 이전 정의를 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(632): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(699): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(857): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(858): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(900): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(901): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(954): warning C4996: 'itoa': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _itoa. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdlib.h(1316): note: 'itoa' 선언을 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(955): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(119): note: 'strcpy' 선언을 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(956): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(90): note: 'strcat' 선언을 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(968): warning C4996: 'itoa': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _itoa. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\stdlib.h(1316): note: 'itoa' 선언을 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(969): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(119): note: 'strcpy' 선언을 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(970): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(90): note: 'strcat' 선언을 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(971): warning C4996: 'strcat': This function or variable may be unsafe. Consider using strcat_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(90): note: 'strcat' 선언을 참조하십시오.
-  display.vcxproj -> C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.exe
-  display.vcxproj -> C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.pdb (Full PDB)
+e:\projects\[project] opencv\image-processing\display\source.cpp(388): warning C4244: '인수': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(555): warning C4005: 'MIN': 매크로 재정의
+  e:\opencv\build\include\opencv2\core\cvdef.h(337): note: 'MIN'의 이전 정의를 참조하십시오.
+e:\projects\[project] opencv\image-processing\display\source.cpp(684): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(760): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(760): warning C4244: '초기화 중': 'double'에서 'const int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(774): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(785): warning C4244: '=': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(837): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  display.vcxproj -> E:\Projects\[Project] OpenCV\Image-Processing\x64\Debug\display.exe
+  display.vcxproj -> E:\Projects\[Project] OpenCV\Image-Processing\x64\Debug\display.pdb (Full PDB)
