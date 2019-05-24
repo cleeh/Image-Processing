@@ -1,3 +1,6 @@
+#define TEST
+#define MODE_DEBUG
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -589,6 +592,41 @@ Point3d TemplateMatching(int** Image, int Height, int Width, int** Block, int He
 	return MatchPoint;
 }
 
+template<typename Type>
+Type** Allocate2(int Height, int Width)
+{
+	Type** ListOut = (Type**)calloc(Height, sizeof(Type*));
+	for (int i = 0; i < Height; i++)
+		ListOut[i] = (Type*)calloc(Width, sizeof(Type));
+
+	return ListOut;
+}
+
+template<typename Type>
+Type**** Allocate4(int Height, int Width)
+{
+	Type**** ListOut = (Type****)calloc(Height, sizeof(Type***));
+	for (int i = 0; i < Height; i++)
+		ListOut[i] = (Type***)calloc(Width, sizeof(Type**));
+
+	return ListOut;
+}
+
+template<typename Type>
+void Free4(Type**** Data, int Height, int Width, int Height2, int Width2 = 0)
+{
+	for (int y = 0; y < Height; y++)
+	{
+		for (int x = 0; x < Width; x++)
+		{
+			for (int b = 0; b < Height2; b++)
+				free(Data[y][x][b]);
+			free(Data[y][x]);
+		}
+		free(Data[y]);
+	}
+}
+
 /** Get average value of brightness of block in 'Image'
  * @param Image block source image
  * @param Height height of 'Image'
@@ -703,7 +741,73 @@ int GetError(int** Image1, int** Image2, int Height, int Width)
 	return Total;
 }
 
-void Encode(int** Image, int Height, int Width, int N)
+template<typename Type>
+Type** ImageScaling(Type** Image, int Height, int Width, float Scale)
+{
+	Type** ImageOut = Allocate2<Type>(Height, Width);
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+			ImageOut[y][x] = Image[y][x] * Scale;
+
+	return ImageOut;
+}
+
+template<typename Type>
+Type** ImageCalibrating(Type** Image, int Height, int Width, int value)
+{
+	Type** ImageOut = Allocate2<Type>(Height, Width);
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+			ImageOut[y][x] = Image[y][x] + value;
+
+	return ImageOut;
+}
+
+int** GetDBlock2Mean(int** Image, int Height, int Width, int N, Point2i Spot)
+{
+	// Initialize
+	const int DBlockRow = Height - 2 * N + 1;
+	const int DBlockColumn = Width - 2 * N + 1;
+
+	int** DBlock = IntAlloc2(2 * N, 2 * N);
+	int** DBlock2 = IntAlloc2(N, N);
+	int** DBlock2Mean = IntAlloc2(N, N);
+
+	// Processing
+	DBlock = ReadBlock(Image, Height, Width, Spot, 2 * N, 2 * N);
+	DBlock2 = DownSampling(DBlock, 2 * N, 2 * N, 2);
+	const int DBlock2Avg = GetAverageBrightness(DBlock2, N, N);
+	DBlock2Mean = IntAlloc2(N, N);
+	for (int b = 0; b < N; b++)
+		for (int a = 0; a < N; a++)
+			DBlock2Mean[b][a] = DBlock2[b][a] - DBlock2Avg;
+
+	// Free Unnecessary Memory
+	IntFree2(DBlock, 2 * N, 2 * N);
+	IntFree2(DBlock2, N, N);
+
+	return DBlock2Mean;
+}
+
+enum GeometricTransform {
+	GT0,
+	GT90,
+	GT180,
+	GT270,
+	GTInverseX,
+	GTInverseY,
+	GTInverseSlash,
+	GTInverseBackSlash
+};
+
+typedef struct {
+	Point2i** MinErrorCoordinate;
+	int** BlockAvg;
+	float alpha;
+	GeometricTransform GT;
+}Information;
+
+Information Encode(int** Image, int Height, int Width, int N, GeometricTransform Geometric = GT0, float alpha = 0.3f)
 {
 	// Factors to save
 	Point2i** MinErrorCoordinate;
@@ -717,60 +821,71 @@ void Encode(int** Image, int Height, int Width, int N)
 	const int BlockColumn = Width / N;
 	
 	// DBlock Factor
-	int**** DBlock;
-	int**** DBlock2;
 	int**** DBlock2Mean;
 	const int DBlockRow = Height - 2 * N + 1;
-	const int DBLockColumn = Width - 2 * N + 1;
+	const int DBlockColumn = Width - 2 * N + 1;
 
 	// Initialize
-	MinErrorCoordinate = (Point2i**)calloc(BlockRow, sizeof(Point2i**));
-	for (int i = 0; i < BlockColumn; i++) MinErrorCoordinate[i] = (Point2i*)calloc(BlockColumn, sizeof(Point2i*));
+	MinErrorCoordinate = Allocate2<Point2i>(BlockRow, BlockColumn);
 	for(int y = 0; y < BlockRow; y++)
 		for (int x = 0; x < BlockColumn; x++)
 			MinErrorCoordinate[y][x] = Point2i(x, y);
 
-	ErrorList = FloatAlloc2(DBlockRow, DBLockColumn);
-	for (int y = 0; y < DBlockRow; y++)
-		for (int x = 0; x < DBLockColumn; x++)
-			ErrorList[y][x] = 100000000;
+	ErrorList = Allocate2<float>(DBlockRow, DBlockColumn);
+	ErrorList = ImageCalibrating<float>(ErrorList, DBlockRow, DBlockColumn, 10000000);
 
-	BlockAvg = IntAlloc2(BlockRow, BlockColumn);
+	BlockAvg = Allocate2<int>(BlockRow, BlockColumn);
+	DBlock2Mean = Allocate4<int>(DBlockRow, DBlockColumn);
 
-	DBlock = (int****)calloc(DBlockRow, sizeof(int***));
-	for (int i = 0; i < DBlockRow; i++)
-		DBlock[i] = (int***)calloc(DBLockColumn, sizeof(int**));
-
-	DBlock2 = (int****)calloc(DBlockRow, sizeof(int***));
-	for (int i = 0; i < DBlockRow; i++)
-		DBlock2[i] = (int***)calloc(DBLockColumn, sizeof(int**));
-
-	DBlock2Mean = (int****)calloc(DBlockRow, sizeof(int***));
-	for (int i = 0; i < DBlockRow; i++)
-		DBlock2Mean[i] = (int***)calloc(DBLockColumn, sizeof(int**));
-
-	printf("==================== Encode ====================\n");
-
+#ifdef MODE_DEBUG
+	printf("============================== Start Encoding ==============================\n");
+#endif
 	// Get DBlock & DBlock2 & DBlock2Mean
 	for (int y = 0; y < DBlockRow; y++)
-		for (int x = 0; x < DBLockColumn; x++)
+		for (int x = 0; x < DBlockColumn; x++)
 		{
-			DBlock[y][x] = ReadBlock(Image, Height, Width, Point2i(x, y), 2 * N, 2 * N);
-			DBlock2[y][x] = DownSampling(DBlock[y][x], 2 * N, 2 * N, 2);
-			const int DBlock2Avg = GetAverageBrightness(DBlock2[y][x], N, N);
-			DBlock2Mean[y][x] = IntAlloc2(N, N);
-			for (int b = 0; b < N; b++)
-				for (int a = 0; a < N; a++)
-					DBlock2Mean[y][x][b][a] = DBlock2[y][x][b][a] - DBlock2Avg;
+			// get DBlock2Mean
+			DBlock2Mean[y][x] = GetDBlock2Mean(Image, Height, Width, N, Point2i(x, y));
+
+			// get geometric DBlock2Mean
+			switch (Geometric)
+			{
+			case GT90: // 90 degree rotation
+				DBlock2Mean[y][x] = RotationTransform(DBlock2Mean[y][x], N, N, 90);
+				break;
+			case GT180: // 180 degree rotation
+				DBlock2Mean[y][x] = RotationTransform(DBlock2Mean[y][x], N, N, 180);
+				break;
+			case GT270: // 270 degree rotation
+				DBlock2Mean[y][x] = RotationTransform(DBlock2Mean[y][x], N, N, 270);
+				break;
+			case GTInverseX: // inverse to x-axis
+				DBlock2Mean[y][x] = BilinearInterpolation(DBlock2Mean[y][x], N, N, 1, 0, 0, -1);
+				break;
+			case GTInverseY: // inverse to y-axis
+				DBlock2Mean[y][x] = BilinearInterpolation(DBlock2Mean[y][x], N, N, -1, 0, 0, 1);
+				break;
+			case GTInverseSlash: // inverse to y=x
+				DBlock2Mean[y][x] = BilinearInterpolation(DBlock2Mean[y][x], N, N, 0, 1, 1, 0);
+				break;
+			case GTInverseBackSlash: // inverse to y=-x
+				DBlock2Mean[y][x] = BilinearInterpolation(DBlock2Mean[y][x], N, N, 0, -1, -1, 0);
+				break;
+			}
+
+			// scaling DBlock2Mean
+			DBlock2Mean[y][x] = ImageScaling<int>(DBlock2Mean[y][x], N, N, alpha);
 		}
-	printf("Finished Calculating DBlock\n\n");
+#ifdef MODE_DEBUG
+	printf("============================== Finished Calculating DBlock2Mean ==============================\n\n");
+#endif
 	
 	// Get Minimum Error Coordinate
 	for(int y = 0; y < BlockRow; y++)
 		for (int x = 0; x < BlockColumn; x++)
 		{
 			// get block & it's average
-			int** Block = ReadBlock(Image, Height, Width, Point2i(x, y), N, N);
+			int** Block = ReadBlock(Image, Height, Width, Point2i(x * N, y * N), N, N);
 			BlockAvg[y][x] = GetAverageBrightness(Block, N, N);
 
 			// get block_means
@@ -781,29 +896,61 @@ void Encode(int** Image, int Height, int Width, int N)
 
 			// get error
 			for(int j = 0; j < DBlockRow; j++)
-				for (int i = 0; i < DBLockColumn; i++)
+				for (int i = 0; i < DBlockColumn; i++)
 					ErrorList[j][i] = GetError(BlockMean, DBlock2Mean[j][i], N, N);
 
 			// get minimum error coordinate
 			for (int j = 0; j < DBlockRow; j++)
-				for (int i = 0; i < DBLockColumn; i++)
-				{
+				for (int i = 0; i < DBlockColumn; i++)
 					if (ErrorList[MinErrorCoordinate[y][x].y][MinErrorCoordinate[y][x].x] > ErrorList[j][i])
 						MinErrorCoordinate[y][x] = Point2i(i, j);
-				}
 
-			printf("Block(%3d, %3d) Minimum Error Coordinate: (%3d, %3d)\n", x * N, y * N, MinErrorCoordinate[y][x].x, MinErrorCoordinate[y][x].y);
+#ifdef MODE_DEBUG
+			printf("Block(%3d, %3d) Minimum Error Coordinate: (%3d, %3d) Block Average Brightness: %d\n", x * N, y * N, MinErrorCoordinate[y][x].x, MinErrorCoordinate[y][x].y, BlockAvg[y][x]);
+#endif
 		}
 
-	printf("\n[Block Average]\n");
+	// Free Unnecessary Memory
+	FloatFree2(ErrorList, DBlockRow, DBlockColumn);
+	Free4<int>(DBlock2Mean, DBlockRow, DBlockColumn, N, N);
+
+	// Return Information which is for Decoding
+	Information result;
+	result.BlockAvg = BlockAvg;
+	result.MinErrorCoordinate = MinErrorCoordinate;
+	result.alpha = alpha;
+	result.GT = Geometric;
+	return result;
+}
+
+int** Decode(int** Image, int Height, int Width, int N, Information arguments)
+{
+	int** ImageOut = IntAlloc2(Height, Width);
+
+	// Block Factor
+	const int BlockRow = Height / N;
+	const int BlockColumn = Width / N;
+
+	int** DBlock2Mean = IntAlloc2(N, N);
+
 	for (int y = 0; y < BlockRow; y++)
-	{
 		for (int x = 0; x < BlockColumn; x++)
 		{
-			printf("%3d ", BlockAvg[y][x]);
+			for (int j = 0; j < N; j++)
+				for (int i = 0; i < N; i++)
+				{
+					DBlock2Mean = GetDBlock2Mean(Image, Height, Width, N, Point2i(x, y));
+					DBlock2Mean = ImageScaling(DBlock2Mean, N, N, arguments.alpha);
+					DBlock2Mean = ImageCalibrating(DBlock2Mean, N, N, arguments.BlockAvg[y][x]);
+				}
+
+			ImageOut = WriteBlock(ImageOut, Height, Width, DBlock2Mean, Point2i(x * N, y * N), N, N);
 		}
-		printf("\n");
-	}
+
+	// Free Unnecessary Memory
+	IntFree2(DBlock2Mean, N, N);
+
+	return ImageOut;
 }
 
 class Timer
@@ -848,7 +995,6 @@ private:
 	bool                                               m_bRunning = false;
 };
 
-#define TEST
 int main()
 {
 	Timer Clock;
@@ -856,6 +1002,7 @@ int main()
 	double LastTime = 0;
 
 	/** Image Pointer */
+	int** DogImage;
 	int** LenaImage;
 	int** OriginalImage;
 	int** DrawingImage;
@@ -866,8 +1013,10 @@ int main()
 	/** width, height of image */
 	int Height, Width;
 	int LenaHeight, LenaWidth;
+	int DogHeight, DogWidth;
 
 	/** Initialize */
+	DogImage = ReadImage("DOG256.jpg", &DogHeight, &DogWidth);
 	LenaImage = ReadImage("LENA256.bmp", &LenaHeight, &LenaWidth);
 	OriginalImage = ReadImage("Koala.bmp", &Height, &Width);
 	DrawingImage = IntAlloc2(Height, Width);
@@ -1121,8 +1270,15 @@ int main()
 #endif
 
 #ifdef TEST
+	int** Image = DogImage;
 
-	Encode(LenaImage, LenaHeight, LenaWidth, 8);
+	for (int i = 0; i < 1; i++)
+	{
+		Information a;
+		a = Encode(Image, DogHeight, DogWidth, 8, GTInverseBackSlash, 0.5);
+		Image = Decode(LenaImage, LenaHeight, LenaWidth, 8, a);
+	}
+	ImageShow("Image", Image, DogHeight, DogWidth);
 
 #endif
 
