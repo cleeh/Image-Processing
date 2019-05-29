@@ -14,6 +14,5 @@ c:\users\user5\desktop\image-processing\display\source.cpp(750): warning C4244: 
           [
               Type=int
           ]
-  LINK : C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.exe을(를) 찾을 수 없거나 마지막 증분 링크에 의해 빌드되지 않았습니다. 전체 링크를 수행하고 있습니다.
   display.vcxproj -> C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.exe
   display.vcxproj -> C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.pdb (Full PDB)

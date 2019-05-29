@@ -879,7 +879,6 @@ Information Encode(int** Image, int Height, int Width, int N, GeometricTransform
 #ifdef MODE_DEBUG
 	printf("============================== Finished Calculating DBlock2Mean ==============================\n\n");
 #endif
-	
 	// Get Minimum Error Coordinate
 	for(int y = 0; y < BlockRow; y++)
 		for (int x = 0; x < BlockColumn; x++)
@@ -939,7 +938,7 @@ int** Decode(int** Image, int Height, int Width, int N, Information arguments)
 			for (int j = 0; j < N; j++)
 				for (int i = 0; i < N; i++)
 				{
-					DBlock2Mean = GetDBlock2Mean(Image, Height, Width, N, Point2i(x, y));
+					DBlock2Mean = GetDBlock2Mean(Image, Height, Width, N, Point2i(arguments.MinErrorCoordinate[y][x].x, arguments.MinErrorCoordinate[y][x].y));
 					DBlock2Mean = ImageScaling(DBlock2Mean, N, N, arguments.alpha);
 					DBlock2Mean = ImageCalibrating(DBlock2Mean, N, N, arguments.BlockAvg[y][x]);
 				}
@@ -1103,10 +1102,8 @@ private:
 	bool                                               m_bRunning = false;
 };
 
-//#define LECTURE
+#define LECTURE
 #define TEST
-
-#define EXAM
 int main()
 {
 	Timer Clock;
@@ -1387,7 +1384,7 @@ int main()
 #ifdef TEST
 	int** Image = DogImage;
 
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		Information a;
 		a = Encode(Image, DogHeight, DogWidth, 8);
@@ -1398,7 +1395,7 @@ int main()
 #endif
 #endif
 
-#ifdef EXAM
+#ifndef LECTURE
 	// Processed Image
 	int** Image_Out_1 = IntAlloc2(LenaHeight, LenaWidth);
 	int** Image_Out_2 = IntAlloc2(LenaHeight, LenaWidth);
