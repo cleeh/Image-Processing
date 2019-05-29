@@ -953,6 +953,114 @@ int** Decode(int** Image, int Height, int Width, int N, Information arguments)
 	return ImageOut;
 }
 
+void CopyImage(int** ImageDest, int** ImageSrc, int Height, int Width)
+{
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+			ImageDest[y][x] = ImageSrc[y][x];
+}
+
+int GetMaxBrightnessCross(int** Image, int Height, int Width, Point2i Spot)
+{
+	int Brightness[5] = { 0 };
+	int MaxBrightness = 0;
+
+	Brightness[0] = Image[Spot.y][Spot.x]; // Center
+	if (Spot.x + 1 < Width)
+		Brightness[1] = Image[Spot.y][Spot.x + 1]; // 3
+	if (Spot.y - 1 >= 0)
+		Brightness[2] = Image[Spot.y - 1][Spot.x]; // 6
+	if (Spot.x - 1 >= 0)
+		Brightness[3] = Image[Spot.y][Spot.x - 1]; // 9
+	if (Spot.y + 1 < Height)
+		Brightness[4] = Image[Spot.y + 1][Spot.x]; // 12
+
+	for (int i = 0; i < 5; i++)
+		if (MaxBrightness < Brightness[i])
+			MaxBrightness = Brightness[i];
+
+	return MaxBrightness;
+}
+
+int GetMinBrightnessCross(int** Image, int Height, int Width, Point2i Spot)
+{
+	int Brightness[5] = { 0 };
+	int MaxBrightness = INT_MAX;
+
+	Brightness[0] = Image[Spot.y][Spot.x]; // Center
+	if (Spot.x + 1 < Width)
+		Brightness[1] = Image[Spot.y][Spot.x + 1]; // 3
+	if (Spot.y - 1 >= 0)
+		Brightness[2] = Image[Spot.y - 1][Spot.x]; // 6
+	if (Spot.x - 1 >= 0)
+		Brightness[3] = Image[Spot.y][Spot.x - 1]; // 9
+	if (Spot.y + 1 < Height)
+		Brightness[4] = Image[Spot.y + 1][Spot.x]; // 12
+
+	for (int i = 0; i < 5; i++)
+		if (MaxBrightness > Brightness[i])
+			MaxBrightness = Brightness[i];
+
+	return MaxBrightness;
+}
+
+void MaxOperation(int** Image, int Height, int Width, int** ImageOut)
+{
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+			ImageOut[y][x] = GetMaxBrightnessCross(Image, Height, Width, Point2i(x, y));
+
+	ImageShow("MaxOperation", ImageOut, Height, Width);
+}
+
+void MinOperation(int** Image, int Height, int Width, int** ImageOut)
+{
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+			ImageOut[y][x] = GetMinBrightnessCross(Image, Height, Width, Point2i(x, y));
+
+	ImageShow("MinOperation", ImageOut, Height, Width);
+}
+
+void DiffOperation(int** MaxImage, int** MinImage, int Height, int Width, int** ImageOut)
+{
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+			ImageOut[y][x] = MaxImage[y][x] - MinImage[y][x];
+
+	ImageShow("DiffOperation", ImageOut, Height, Width);
+}
+
+void MaxNtimes(int** Image, int Height, int Width, int N, int** ImageOut)
+{
+	int** ImageBuffer = IntAlloc2(Height, Width);
+	CopyImage(ImageBuffer, Image, Height, Width);
+
+	for (int i = 0; i < N; i++)
+	{
+		MaxOperation(ImageBuffer, Height, Width, ImageOut);
+		if (i == N - 1) break;
+		CopyImage(ImageBuffer, ImageOut, Height, Width);
+	}
+
+	IntFree2(ImageBuffer, Height, Width);
+}
+
+void MinNtimes(int** Image, int Height, int Width, int N, int** ImageOut)
+{
+	int** ImageBuffer = IntAlloc2(Height, Width);
+	CopyImage(ImageBuffer, Image, Height, Width);
+
+	for (int i = 0; i < N; i++)
+	{
+		MinOperation(ImageBuffer, Height, Width, ImageOut);
+		if (i == N - 1) continue;
+		CopyImage(ImageBuffer, ImageOut, Height, Width);
+	}
+
+	IntFree2(ImageBuffer, Height, Width);
+}
+
 class Timer
 {
 public:
@@ -995,6 +1103,10 @@ private:
 	bool                                               m_bRunning = false;
 };
 
+//#define LECTURE
+#define TEST
+
+#define EXAM
 int main()
 {
 	Timer Clock;
@@ -1025,13 +1137,14 @@ int main()
 	RotatedImage = IntAlloc2(Height, Width);
 
 	/** Image Processing */
+#ifdef LECTURE
 #ifndef TEST
 	// Drawing Circle
 	DrawingImage = DrawCircle(OriginalImage, Height, Width, 200, 200, 80, 220);
 	DrawingImage = DrawCircle(OriginalImage, Height, Width, 350, 350, 40, 120);
 	std::cout << "Drawing Circle: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
 	LastTime = Clock.elapsedSeconds();
-	
+
 	// Affine Transform
 	for (int y = 0; y < Height - 1; y++)
 		for (int x = 0; x < Width - 1; x++)
@@ -1040,7 +1153,7 @@ int main()
 			Point2d point_out = Affine(point, 1.0, 0.4, 0.4, 2.0);
 
 			if (point_out.y > Height - 1 || point_out.y < 0 || point_out.x > Width - 1 || point_out.x < 0) continue;
-			AffinedImage[(int)(point_out.y+0.5)][(int)(point_out.x+0.5)] = OriginalImage[y][x];
+			AffinedImage[(int)(point_out.y + 0.5)][(int)(point_out.x + 0.5)] = OriginalImage[y][x];
 		}
 	std::cout << "Affine Transform: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
 	LastTime = Clock.elapsedSeconds();
@@ -1049,9 +1162,9 @@ int main()
 	BilinearInterpolationImage = BilinearInterpolation(OriginalImage, Height, Width, 1.5, 0, 0, 1.5);
 	std::cout << "Bilinear Interpolation: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
 	LastTime = Clock.elapsedSeconds();
-	
+
 	// Rotation Transform
-	RotatedImage = RotationTransform(OriginalImage, Height, Width, 45, Height/2, Width/2);
+	RotatedImage = RotationTransform(OriginalImage, Height, Width, 45, Height / 2, Width / 2);
 	std::cout << "Rotation Transform: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
 	LastTime = Clock.elapsedSeconds();
 
@@ -1118,18 +1231,18 @@ int main()
 	LastTime = Clock.elapsedSeconds();
 
 	/** 2019-04-09 Lecture
-	 * Fractal Encoding
-	  - Template Matching
-	  - Geometric Transform - 8°¡Áö
-	  - Sampling - 0.3 ~ 1.0
-	  - Down Sampling
-	  - Æò±Õ°ª + Æò±ÕÁ¦°Å
+	* Fractal Encoding
+	- Template Matching
+	- Geometric Transform - 8°¡Áö
+	- Sampling - 0.3 ~ 1.0
+	- Down Sampling
+	- Æò±Õ°ª + Æò±ÕÁ¦°Å
 
-	 * Fractal Decoding
-	 */
+	* Fractal Decoding
+	*/
 
 	// Down Sampling 1/2
-	int** DownSampling2Image = IntAlloc2(Height/2, Width/2);
+	int** DownSampling2Image = IntAlloc2(Height / 2, Width / 2);
 	DownSampling2Image = DownSampling2(OriginalImage, Height, Width);
 	std::cout << "Down Sampling 1/2: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
 	LastTime = Clock.elapsedSeconds();
@@ -1153,7 +1266,7 @@ int main()
 	LastTime = Clock.elapsedSeconds();
 
 	// Flipped Template Matching
-	#define N 16
+#define N 16
 	int FlippedTemplateHeight;
 	int FlippedTemplateWidth;
 
@@ -1191,7 +1304,7 @@ int main()
 		for (int y = point_flip[i].y; y < point_flip[i].y + FlippedTemplateHeight; y++)
 			for (int x = point_flip[i].x; x < point_flip[i].x + FlippedTemplateWidth; x++)
 				FlippedMatchMarkingImage[i][y][x] = 255;
-		
+
 		std::cout << "[" << i << "] " << point_flip[i].z << std::endl;
 	}
 	std::cout << "=====================================================================" << std::endl;
@@ -1225,7 +1338,7 @@ int main()
 
 	/** Show Image */
 	ImageShow("Original Image", OriginalImage, Height, Width);
- 	ImageShow("Drawing Image", DrawingImage, Height, Width);
+	ImageShow("Drawing Image", DrawingImage, Height, Width);
 	ImageShow("Affined Image", AffinedImage, Height, Width);
 	ImageShow("Bilinear Interpolation Image", BilinearInterpolationImage, Height, Width);
 	ImageShow("Rotated Image", RotatedImage, Height, Width);
@@ -1268,18 +1381,37 @@ int main()
 	ImageShow("Reading Block Image", BlockImage, 400, 400);
 	ImageShow("Writing Block Image", WrittenImage, Height, Width);
 #endif
+#endif
 
+#ifdef LECTURE
 #ifdef TEST
 	int** Image = DogImage;
 
-	for (int i = 0; i < 1; i++)
+	for (int i = 0; i < 5; i++)
 	{
 		Information a;
-		a = Encode(Image, DogHeight, DogWidth, 8, GTInverseBackSlash, 0.5);
+		a = Encode(Image, DogHeight, DogWidth, 8);
 		Image = Decode(LenaImage, LenaHeight, LenaWidth, 8, a);
 	}
-	ImageShow("Image", Image, DogHeight, DogWidth);
+	ImageShow("Image", Image, LenaHeight, LenaWidth);
 
+#endif
+#endif
+
+#ifdef EXAM
+	// Processed Image
+	int** Image_Out_1 = IntAlloc2(LenaHeight, LenaWidth);
+	int** Image_Out_2 = IntAlloc2(LenaHeight, LenaWidth);
+	int** Image_Out_3 = IntAlloc2(LenaHeight, LenaWidth);
+
+	// Process
+	MaxOperation(LenaImage, LenaHeight, LenaWidth, Image_Out_1);
+	MinOperation(LenaImage, LenaHeight, LenaWidth, Image_Out_2);
+	DiffOperation(Image_Out_1, Image_Out_2, LenaHeight, LenaWidth, Image_Out_3);
+
+	MaxNtimes(LenaImage, LenaHeight, LenaWidth, 5, Image_Out_1);
+	MinNtimes(LenaImage, LenaHeight, LenaWidth, 5, Image_Out_2);
+	DiffOperation(Image_Out_1, Image_Out_2, LenaHeight, LenaWidth, Image_Out_3);
 #endif
 
 	return 0;

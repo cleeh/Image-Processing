@@ -23,6 +23,9 @@
     <None Include="C:\Users\Coria\Downloads\Pinhole Camera.pptx">
       <Filter>리소스 파일</Filter>
     </None>
+    <None Include="..\..\Exam.pdf">
+      <Filter>리소스 파일</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\Down Sampling.png">

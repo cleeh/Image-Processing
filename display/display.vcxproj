@@ -151,6 +151,7 @@
     <ClCompile Include="source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\Exam.pdf" />
     <None Include="C:\Users\Coria\Downloads\Pinhole Camera.pptx" />
   </ItemGroup>
   <ItemGroup>
