@@ -1,18 +1,49 @@
 ﻿  source.cpp
-c:\users\user5\desktop\image-processing\display\source.cpp(391): warning C4244: '인수': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(558): warning C4005: 'MIN': 매크로 재정의
-  c:\opencv\build\include\opencv2\core\cvdef.h(337): note: 'MIN'의 이전 정의를 참조하십시오.
-c:\users\user5\desktop\image-processing\display\source.cpp(722): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(779): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(779): warning C4244: '초기화 중': 'double'에서 'const int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(889): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(900): warning C4244: '=': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(1092): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-c:\users\user5\desktop\image-processing\display\source.cpp(750): warning C4244: '=': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  c:\users\user5\desktop\image-processing\display\source.cpp(877): note: 컴파일 중인 함수 템플릿 인스턴스화 'Type **ImageScaling<int>(Type **,int,int,float)'에 대한 참조를 확인하십시오.
+e:\projects\[project] opencv\image-processing\display\source.cpp(387): warning C4244: '인수': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(554): warning C4005: 'MIN': 매크로 재정의
+  e:\opencv\build\include\opencv2\core\cvdef.h(337): note: 'MIN'의 이전 정의를 참조하십시오.
+e:\projects\[project] opencv\image-processing\display\source.cpp(729): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(787): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(787): warning C4244: '초기화 중': 'double'에서 'const int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(853): warning C4244: '초기화 중': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(853): warning C4244: '-=': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(855): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(861): warning C4244: '=': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(867): warning C4244: '초기화 중': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(867): warning C4244: '-=': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(869): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(875): warning C4244: '=': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(881): warning C4244: '초기화 중': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(881): warning C4244: '-=': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(883): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(889): warning C4244: '=': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(895): warning C4244: '초기화 중': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(895): warning C4244: '-=': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(897): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(903): warning C4244: '=': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(909): warning C4244: '초기화 중': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(909): warning C4244: '-=': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(911): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(917): warning C4244: '=': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(923): warning C4244: '초기화 중': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(923): warning C4244: '-=': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(925): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(931): warning C4244: '=': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(937): warning C4244: '초기화 중': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(937): warning C4244: '-=': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(939): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(945): warning C4244: '=': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(951): warning C4244: '초기화 중': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(951): warning C4244: '-=': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(953): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(959): warning C4244: '=': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(1028): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(1233): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+e:\projects\[project] opencv\image-processing\display\source.cpp(757): warning C4244: '=': 'float'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  e:\projects\[project] opencv\image-processing\display\source.cpp(855): note: 컴파일 중인 함수 템플릿 인스턴스화 'void ImageScaling<int>(Type **,int,int,float,Type **)'에 대한 참조를 확인하십시오.
           with
           [
               Type=int
           ]
-  display.vcxproj -> C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.exe
-  display.vcxproj -> C:\Users\user5\Desktop\Image-Processing\x64\Debug\display.pdb (Full PDB)
+  display.vcxproj -> E:\Projects\[Project] OpenCV\Image-Processing\x64\Debug\display.exe
+  display.vcxproj -> E:\Projects\[Project] OpenCV\Image-Processing\x64\Debug\display.pdb (Full PDB)
