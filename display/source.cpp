@@ -179,7 +179,7 @@ void Ex0305() {
 
 	/** width, height of image */
 	int height, width;
-	
+
 	// Initialize
 	image = ReadImage("koala.jpg", &height, &width);
 
@@ -193,16 +193,16 @@ void Ex0305() {
 		if (y < 0 || y > height - 1) continue;
 		else image[y][x] = 255;
 	}
-	
+
 	// Show result
 	ImageShow("test", image, height, width);
 }
 
 /** 2*2 Matrix
- * @argument a (Row 1, Column 1)
- * @argument b (Row 1, Column 2)
- * @argument c (Row 2, Column 1)
- * @argument d (Row 2, Column 2)
+* @argument a (Row 1, Column 1)
+* @argument b (Row 1, Column 2)
+* @argument c (Row 2, Column 1)
+* @argument d (Row 2, Column 2)
 */
 typedef struct {
 	double a, b;
@@ -282,17 +282,17 @@ Point3d Affine(Point3d Input, double a, double b, double c, double d, double e, 
 }
 
 /** Draw a line
- * @param Image Image file that stores color of each pixel
- * @param Height height of image
- * @parma Width width of image
- * @param a Inclination of line
- * @param b Constant added to formula
- * @param Thickness Thickness of line
- * @param brightness Brightness of line
- *
- * @formula --> y = ax + b --> ax - y + b = 0
- *          --> d = |ax0 - y0 + b| / sqrt(a*a + 1)
- */
+* @param Image Image file that stores color of each pixel
+* @param Height height of image
+* @parma Width width of image
+* @param a Inclination of line
+* @param b Constant added to formula
+* @param Thickness Thickness of line
+* @param brightness Brightness of line
+*
+* @formula --> y = ax + b --> ax - y + b = 0
+*          --> d = |ax0 - y0 + b| / sqrt(a*a + 1)
+*/
 int** DrawLine(int** Image, int Height, int Width, double a, double b, double Thickness, uint8_t brightness) {
 	int** ImageOut = IntAlloc2(Height, Width);
 
@@ -307,20 +307,19 @@ int** DrawLine(int** Image, int Height, int Width, double a, double b, double Th
 	return ImageOut;
 }
 
-/** Draw a circle filled with 
- * @param Image Image file that stores color of each pixel
- * @param Height height of image
- * @parma Width width of image
- * @param a X coordinate of center of circle
- * @param b Y coordinate of center of circle
- * @param r radius of circle
- * @param brightness Brightness of circle
-
- * @formula --> (x - a)^2 + (y - b)^2 = r^2
- */
+/** Draw a circle filled with
+* @param Image Image file that stores color of each pixel
+* @param Height height of image
+* @parma Width width of image
+* @param a X coordinate of center of circle
+* @param b Y coordinate of center of circle
+* @param r radius of circle
+* @param brightness Brightness of circle
+* @formula --> (x - a)^2 + (y - b)^2 = r^2
+*/
 int** DrawCircle(int** Image, int Height, int Width, double a, double b, double r, uint8_t brightness) {
 	int** ImageOut = IntAlloc2(Height, Width);
-	
+
 	for (int y = 0; y < Height; y++)
 		for (int x = 0; x < Width; x++)
 		{
@@ -372,13 +371,13 @@ void BilinearInterpolation(int** ImageOut, int** Image, int Height, int Width, d
 }
 
 /** Rotate image clockwise and apply bilinear interpolation on image
- * @param Image image to rotate
- * @param Height height of image
- * @param Width width of image
- * @param Angle rotation angle
- * @param OriginY y coordinate of origin for rotation
- * @param OriginX x coordinate of origin for rotation
- */
+* @param Image image to rotate
+* @param Height height of image
+* @param Width width of image
+* @param Angle rotation angle
+* @param OriginY y coordinate of origin for rotation
+* @param OriginX x coordinate of origin for rotation
+*/
 void RotationTransform(int** ImageOut, int** Image, double Height, double Width, double Angle, double OriginY = 0, double OriginX = 0)
 {
 	// transform radian to degree
@@ -388,17 +387,16 @@ void RotationTransform(int** ImageOut, int** Image, double Height, double Width,
 }
 
 /** Transform 3D line to 2D line & Show transformed image
- * @param Image image which line is projected to
- * @param Height height of image to show
- * @param Width width of image to show
- * @param p starting point of line
- * @param q ending point of line
- * @param DotNumber number of dot expressing line (the more this parameter is bigger, the more result looks like line)
- * @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
- * @param brightness brightness of dot marked on image
-
- * @description refer to resource file: "Pinhole Camera.pptx"
- */
+* @param Image image which line is projected to
+* @param Height height of image to show
+* @param Width width of image to show
+* @param p starting point of line
+* @param q ending point of line
+* @param DotNumber number of dot expressing line (the more this parameter is bigger, the more result looks like line)
+* @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
+* @param brightness brightness of dot marked on image
+* @description refer to resource file: "Pinhole Camera.pptx"
+*/
 int** PinholeLine(int** Image, double Height, double Width, Point3d p, Point3d q, int DotNumber, double PlaneDistance = 300, uint8_t brightness = 255)
 {
 	int** ImageOut = Image;
@@ -406,7 +404,7 @@ int** PinholeLine(int** Image, double Height, double Width, Point3d p, Point3d q
 	p *= -1;
 	q *= -1;
 
-	for (double t = 0; t < 1; t += (double)1/ DotNumber)
+	for (double t = 0; t < 1; t += (double)1 / DotNumber)
 	{
 		Point3d point_target = p + t*(q - p);
 		if (point_target.z == 0) point_target.z = 0.0001;
@@ -420,17 +418,16 @@ int** PinholeLine(int** Image, double Height, double Width, Point3d p, Point3d q
 }
 
 /** Transform 3D Parallelogram to 2D Parallelogram & Show transformed image
- * @param Image image which parallelogram is projected to
- * @param Height height of image to show
- * @param Width width of image to show
- * @param o coordinate for cornor of parallelogram
- * @param n,m side vector starting from 'o' vector
- * @param DotNumber number of dot expressing line (the more this parameter is bigger, the more result looks like line)
- * @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
- * @param brightness brightness of dot marked on image
-
- * @description refer to resource file: "Pinhole Camera.pptx"
- */
+* @param Image image which parallelogram is projected to
+* @param Height height of image to show
+* @param Width width of image to show
+* @param o coordinate for cornor of parallelogram
+* @param n,m side vector starting from 'o' vector
+* @param DotNumber number of dot expressing line (the more this parameter is bigger, the more result looks like line)
+* @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
+* @param brightness brightness of dot marked on image
+* @description refer to resource file: "Pinhole Camera.pptx"
+*/
 int** PinholeParallelogram(int** Image, double Height, double Width, Point3d o, Point3d n, Point3d m, int DotNumber, double PlaneDistance = 300, uint8_t brightness = 255)
 {
 	int** ImageOut = Image;
@@ -452,16 +449,15 @@ int** PinholeParallelogram(int** Image, double Height, double Width, Point3d o, 
 }
 
 /** Transform 3D Parallelogram to 2D Parallelogram & Show transformed image
- * @param Image image which parallelogram is projected to
- * @param Height height of image to show
- * @param Width width of image to show
- * @param o,n,m coordinate for cornor of parallelogram
- * @param Density density of dots (the bigger this value is, the more dense dots composing arallelogram is)
- * @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
- * @param brightness brightness of dot marked on image
-
- * @description refer to resource file: "Pinhole Camera.pptx"
- */
+* @param Image image which parallelogram is projected to
+* @param Height height of image to show
+* @param Width width of image to show
+* @param o,n,m coordinate for cornor of parallelogram
+* @param Density density of dots (the bigger this value is, the more dense dots composing arallelogram is)
+* @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
+* @param brightness brightness of dot marked on image
+* @description refer to resource file: "Pinhole Camera.pptx"
+*/
 int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point3d o, Point3d n, Point3d m, double Density = 1, double PlaneDistance = 300, uint8_t brightness = 255)
 {
 	int** ImageOut = Image;
@@ -490,19 +486,18 @@ int** PinholeParallelogramFilled(int** Image, double Height, double Width, Point
 }
 
 /** Transform 3D Parallelogram to 2D Parallelogram & Show transformed image
- * @param ImageDest image which 3D image is projected to
- * @param HeightDest height of image to show
- * @param WidthDest width of image to show
- * @param ImageSrc image to project
- * @param HeightSrc height of image to project
- * @param WidthSrc width of image to project
- * @param o,n,m coordinate for cornor of parallelogram
- * @param Density density of dots (the bigger this value is, the more dense dots composing arallelogram is)
- * @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
- * @param brightness brightness of dot marked on image
-
- * @description refer to resource file: "Pinhole Camera.pptx"
- */
+* @param ImageDest image which 3D image is projected to
+* @param HeightDest height of image to show
+* @param WidthDest width of image to show
+* @param ImageSrc image to project
+* @param HeightSrc height of image to project
+* @param WidthSrc width of image to project
+* @param o,n,m coordinate for cornor of parallelogram
+* @param Density density of dots (the bigger this value is, the more dense dots composing arallelogram is)
+* @param PlaneDistance distance between camera and image plane that projects line (the more this parameter is bigger, the more line is enlarged)
+* @param brightness brightness of dot marked on image
+* @description refer to resource file: "Pinhole Camera.pptx"
+*/
 int** RenderImage(int** ImageDest, double HeightDest, double WidthDest, int** ImageSrc, double HeightSrc, double WidthSrc, Point3d o, Point3d n, Point3d m, double PlaneDistance = 300, uint8_t brightness = 255)
 {
 	int** ImageOut = ImageDest;
@@ -528,18 +523,17 @@ int** RenderImage(int** ImageDest, double HeightDest, double WidthDest, int** Im
 }
 
 /** Down size the image to 1/2
- * @param Image image to down size
- * @param Height height of image to down size
- * @param Width width of image to down size
-
- * @description refer to resource file: "Down Sampling.png"
- */
+* @param Image image to down size
+* @param Height height of image to down size
+* @param Width width of image to down size
+* @description refer to resource file: "Down Sampling.png"
+*/
 int** DownSampling2(int** Image, int Height, int Width)
 {
-	int** ImageOut = IntAlloc2(Height/2, Width/2);
-	
-	for(int y = 0; y < Height/2; y++)
-		for (int x = 0; x < Width/2; x++)
+	int** ImageOut = IntAlloc2(Height / 2, Width / 2);
+
+	for (int y = 0; y < Height / 2; y++)
+		for (int x = 0; x < Width / 2; x++)
 		{
 			int target_x = x * 2;
 			int target_y = y * 2;
@@ -553,16 +547,15 @@ int** DownSampling2(int** Image, int Height, int Width)
 
 #define MIN(a, b) (a < b ? a : b)
 /** Find coordinate of block that matches with template 'Block'
- * @param Image image to find matching
- * @param Height height of 'Image'
- * @param Width width of 'Image'
- * @param Block image which has pattern to find in 'Image'
- * @param HeightBlock height of block image
- * @param WidthBlock width of block image
-
- * @return Point3d.x,Point3d.y coordinate of location that error value is smallest
- * @return Point3d.z error value of (x, y) location
- */
+* @param Image image to find matching
+* @param Height height of 'Image'
+* @param Width width of 'Image'
+* @param Block image which has pattern to find in 'Image'
+* @param HeightBlock height of block image
+* @param WidthBlock width of block image
+* @return Point3d.x,Point3d.y coordinate of location that error value is smallest
+* @return Point3d.z error value of (x, y) location
+*/
 Point3d TemplateMatching(int** Image, int Height, int Width, int** Block, int HeightBlock, int WidthBlock)
 {
 	const int ListHeight = Height - HeightBlock + 1;
@@ -623,6 +616,7 @@ void Free2(Type** Data, int Height, int Width = 0)
 {
 	for (int i = 0; i < Height; i++)
 		free(Data[i]);
+	free(Data);
 }
 
 template<typename Type>
@@ -638,15 +632,15 @@ void Free4(Type**** Data, int Height, int Width, int Height2, int Width2 = 0)
 		}
 		free(Data[y]);
 	}
+	free(Data);
 }
 
 /** Get average value of brightness of block in 'Image'
- * @param Image block source image
- * @param Height height of 'Image'
- * @param Width width of 'Image'
-
- * @return Average value of brightness of 'Image'
- */
+* @param Image block source image
+* @param Height height of 'Image'
+* @param Width width of 'Image'
+* @return Average value of brightness of 'Image'
+*/
 double GetAverageBrightness(int** Image, int Height, int Width)
 {
 	unsigned int Total = 0;
@@ -664,13 +658,13 @@ double GetAverageBrightness(int** Image, int Height, int Width)
 }
 
 /** Down size the image to 1/N
- * @param Image image to down size
- * @param Height height of image to down size
- * @param Width width of image to down size
- * @param Spot origin coordinate of starting point of block
- * @param HeightBlock height of block
- * @param WidthBlock width of block
- */
+* @param Image image to down size
+* @param Height height of image to down size
+* @param Width width of image to down size
+* @param Spot origin coordinate of starting point of block
+* @param HeightBlock height of block
+* @param WidthBlock width of block
+*/
 void ReadBlock(int** Image, int Height, int Width, int** Block, int HeightBlock, int WidthBlock, Point2i Spot = Point2i(0, 0))
 {
 	for (int y = 0; y < HeightBlock; y++)
@@ -682,14 +676,14 @@ void ReadBlock(int** Image, int Height, int Width, int** Block, int HeightBlock,
 }
 
 /** Down size the image to 1/N
- * @param Image image to down size
- * @param Height height of image to down size
- * @param Width width of image to down size
- * @param ImageSrc writing block on 'ImageDest'
- * @param Spot origin coordinate of starting point of block
- * @param HeightSrc height of block from 'ImageSrc'
- * @param WidthSrc width of block from "ImageSrc'
- */
+* @param Image image to down size
+* @param Height height of image to down size
+* @param Width width of image to down size
+* @param ImageSrc writing block on 'ImageDest'
+* @param Spot origin coordinate of starting point of block
+* @param HeightSrc height of block from 'ImageSrc'
+* @param WidthSrc width of block from "ImageSrc'
+*/
 void WriteBlock(int** ImageOut, int** ImageDest, int Height, int Width, int** ImageSrc, Point2i Spot, int HeightSrc, int WidthSrc)
 {
 	for (int y = 0; y < Height; y++)
@@ -706,13 +700,12 @@ void WriteBlock(int** ImageOut, int** ImageDest, int Height, int Width, int** Im
 }
 
 /** Down size the image to 1/N
- * @param Image image to down size
- * @param Height height of image to down size
- * @param Width width of image to down size
- * @param N downsampling ratio
-
- * @description refer to resource file: "Down Sampling.png"
- */
+* @param Image image to down size
+* @param Height height of image to down size
+* @param Width width of image to down size
+* @param N downsampling ratio
+* @description refer to resource file: "Down Sampling.png"
+*/
 void DownSampling(int** Image, int Height, int Width, int N, int** ImageOut)
 {
 	// Size Factor
@@ -728,16 +721,16 @@ void DownSampling(int** Image, int Height, int Width, int N, int** ImageOut)
 			ReadBlock(Image, Height, Width, ImageBuffer, N, N, Point2i(x * N, y * N));
 			ImageOut[y][x] = GetAverageBrightness(ImageBuffer, N, N);
 		}
-	
+
 	IntFree2(ImageBuffer, N, N);
 }
 
 /** Get error between 'Image1' and 'Image2'
- * @param Image1 image to get error
- * @param Image2 other image to get error
- * @param Height height of 'Image1' & 'Image2'
- * @param Width width of 'Image1' & 'Image2'
- */
+* @param Image1 image to get error
+* @param Image2 other image to get error
+* @param Height height of 'Image1' & 'Image2'
+* @param Width width of 'Image1' & 'Image2'
+*/
 int GetError(int** Image1, int** Image2, int Height, int Width)
 {
 	int Total = 0;
@@ -840,129 +833,29 @@ void GetGTImage(int** Image, int N, GeometricTransform GT = GT0)
 	}
 }
 
-inline int GetMinErrorGTAlpha(int** BlockMean, int** DBlock2Mean, int N, GeometricTransform* MinErrorGT = NULL, float* MinErrorAlpha = NULL, float MinAlpha = 0.3f, float MaxAlpha = 1.0f)
+inline int GetMinErrorGTAlpha(int** BlockMean, int***** DBlock2Mean, int N, Point2i BlockSpot, GeometricTransform* MinErrorGT = NULL, float* MinErrorAlpha = NULL, float MinAlpha = 0.3f, float MaxAlpha = 1.0f, float AlphaDiff = 0.1f)
 {
 	// Initialize
 	int** ScaledImageBuffer = IntAlloc2(N, N);
-	int** ImageBuffer = IntAlloc2(N, N);
 	int ErrorBuffer = 0;
 	int Error = INT_MAX;
 
-	// GT0
-	CopyImage(ImageBuffer, DBlock2Mean, N, N);
-	for (int alpha = MaxAlpha; alpha >= MinAlpha; alpha -= 0.1f)
-	{
-		ImageScaling<int>(ImageBuffer, N, N, alpha, ScaledImageBuffer);
-		ErrorBuffer = GetError(BlockMean, ScaledImageBuffer, N, N);
-		if (Error > ErrorBuffer)
+	// Processing
+	for (int i = 0; i < 8; i++)
+		for (float alpha = MaxAlpha; alpha >= MinAlpha; alpha -= AlphaDiff)
 		{
-			Error = ErrorBuffer;
-			*MinErrorGT = GT0;
-			*MinErrorAlpha = alpha;
+			ImageScaling<int>(DBlock2Mean[i][BlockSpot.y][BlockSpot.x], N, N, alpha, ScaledImageBuffer);
+			ErrorBuffer = GetError(BlockMean, ScaledImageBuffer, N, N);
+			if (Error > ErrorBuffer)
+			{
+				Error = ErrorBuffer;
+				*MinErrorGT = (GeometricTransform)i;
+				*MinErrorAlpha = alpha;
+			}
 		}
-	}
-
-	// GT90
-	GetGTImage(ImageBuffer, N, GT90);
-	for (int alpha = MaxAlpha; alpha >= MinAlpha; alpha -= 0.1f)
-	{
-		ImageScaling<int>(ImageBuffer, N, N, alpha, ScaledImageBuffer);
-		ErrorBuffer = GetError(BlockMean, ScaledImageBuffer, N, N);
-		if (Error > ErrorBuffer)
-		{
-			Error = ErrorBuffer;
-			*MinErrorGT = GT90;
-			*MinErrorAlpha = alpha;
-		}
-	}
-	
-	// GT180
-	GetGTImage(ImageBuffer, N, GT180);
-	for (int alpha = MaxAlpha; alpha >= MinAlpha; alpha -= 0.1f)
-	{
-		ImageScaling<int>(ImageBuffer, N, N, alpha, ScaledImageBuffer);
-		ErrorBuffer = GetError(BlockMean, ScaledImageBuffer, N, N);
-		if (Error > ErrorBuffer)
-		{
-			Error = ErrorBuffer;
-			*MinErrorGT = GT180;
-			*MinErrorAlpha = alpha;
-		}
-	}
-
-	// GT270
-	GetGTImage(ImageBuffer, N, GT270);
-	for (int alpha = MaxAlpha; alpha >= MinAlpha; alpha -= 0.1f)
-	{
-		ImageScaling<int>(ImageBuffer, N, N, alpha, ScaledImageBuffer);
-		ErrorBuffer = GetError(BlockMean, ScaledImageBuffer, N, N);
-		if (Error > ErrorBuffer)
-		{
-			Error = ErrorBuffer;
-			*MinErrorGT = GT270;
-			*MinErrorAlpha = alpha;
-		}
-	}
-
-	// GTInverseX
-	GetGTImage(ImageBuffer, N, GTInverseX);
-	for (int alpha = MaxAlpha; alpha >= MinAlpha; alpha -= 0.1f)
-	{
-		ImageScaling<int>(ImageBuffer, N, N, alpha, ScaledImageBuffer);
-		ErrorBuffer = GetError(BlockMean, ScaledImageBuffer, N, N);
-		if (Error > ErrorBuffer)
-		{
-			Error = ErrorBuffer;
-			*MinErrorGT = GTInverseX;
-			*MinErrorAlpha = alpha;
-		}
-	}
-
-	// GTInverseY
-	GetGTImage(ImageBuffer, N, GTInverseY);
-	for (int alpha = MaxAlpha; alpha >= MinAlpha; alpha -= 0.1f)
-	{
-		ImageScaling<int>(ImageBuffer, N, N, alpha, ScaledImageBuffer);
-		ErrorBuffer = GetError(BlockMean, ScaledImageBuffer, N, N);
-		if (Error > ErrorBuffer)
-		{
-			Error = ErrorBuffer;
-			*MinErrorGT = GTInverseX;
-			*MinErrorAlpha = alpha;
-		}
-	}
-
-	// GTInverseSlash
-	GetGTImage(ImageBuffer, N, GTInverseSlash);
-	for (int alpha = MaxAlpha; alpha >= MinAlpha; alpha -= 0.1f)
-	{
-		ImageScaling<int>(ImageBuffer, N, N, alpha, ScaledImageBuffer);
-		ErrorBuffer = GetError(BlockMean, ScaledImageBuffer, N, N);
-		if (Error > ErrorBuffer)
-		{
-			Error = ErrorBuffer;
-			*MinErrorGT = GTInverseSlash;
-			*MinErrorAlpha = alpha;
-		}
-	}
-
-	// GTInverseBackSlash
-	GetGTImage(ImageBuffer, N, GTInverseBackSlash);
-	for (int alpha = MaxAlpha; alpha >= MinAlpha; alpha -= 0.1f)
-	{
-		ImageScaling<int>(ImageBuffer, N, N, alpha, ScaledImageBuffer);
-		ErrorBuffer = GetError(BlockMean, ScaledImageBuffer, N, N);
-		if (Error > ErrorBuffer)
-		{
-			Error = ErrorBuffer;
-			*MinErrorGT = GTInverseBackSlash;
-			*MinErrorAlpha = alpha;
-		}
-	}
 
 	// Clear unnecessary memory
 	Free2<int>(ScaledImageBuffer, N, N);
-	Free2<int>(ImageBuffer, N, N);
 
 	return Error;
 }
@@ -981,9 +874,9 @@ Information Encode(int** Image, int Height, int Width, int N)
 	// Block Factor
 	const int BlockRow = Height / N;
 	const int BlockColumn = Width / N;
-	
+
 	// DBlock Factor
-	int**** DBlock2Mean;
+	int**** DBlock2Mean[8];
 	const int DBlockRow = Height - 2 * N + 1;
 	const int DBlockColumn = Width - 2 * N + 1;
 
@@ -991,7 +884,7 @@ Information Encode(int** Image, int Height, int Width, int N)
 	MinErrorAlpha = Allocate2<float>(BlockRow, BlockColumn);
 	MinErrorGT = Allocate2<GeometricTransform>(BlockRow, BlockColumn);
 	MinErrorCoordinate = Allocate2<Point2i>(BlockRow, BlockColumn);
-	for(int y = 0; y < BlockRow; y++)
+	for (int y = 0; y < BlockRow; y++)
 		for (int x = 0; x < BlockColumn; x++)
 			MinErrorCoordinate[y][x] = Point2i(x, y);
 
@@ -999,7 +892,8 @@ Information Encode(int** Image, int Height, int Width, int N)
 	ImageCalibrating<int>(ErrorList, DBlockRow, DBlockColumn, 10000000, ErrorList);
 
 	BlockAvg = Allocate2<int>(BlockRow, BlockColumn);
-	DBlock2Mean = Allocate4<int>(DBlockRow, DBlockColumn, N, N);
+	for(int i = 0; i < 8; i++)
+		DBlock2Mean[i] = Allocate4<int>(DBlockRow, DBlockColumn, N, N);
 
 #ifdef MODE_DEBUG
 	printf("============================== Start Encoding ==============================\n");
@@ -1008,19 +902,26 @@ Information Encode(int** Image, int Height, int Width, int N)
 	// Get DBlock & DBlock2 & DBlock2Mean
 	for (int y = 0; y < DBlockRow; y++)
 		for (int x = 0; x < DBlockColumn; x++)
-			 GetDBlock2Mean(Image, Height, Width, N, Point2i(x, y), DBlock2Mean[y][x]);
+		{
+			GetDBlock2Mean(Image, Height, Width, N, Point2i(x, y), DBlock2Mean[0][y][x]);
+			for (int i = 1; i < 8; i++)
+			{
+				CopyImage(DBlock2Mean[i][y][x], DBlock2Mean[0][y][x], N, N);
+				GetGTImage(DBlock2Mean[i][y][x], N, (GeometricTransform)i);
+			}
+		}
 
 #ifdef MODE_DEBUG
 	printf("============================== Finished Calculating DBlock2Mean ==============================\n\n");
 #endif
-	
+
 	// Get Minimum Error Coordinate
 	int** Block = IntAlloc2(N, N);
 	int** BlockMean = IntAlloc2(N, N);
 	float** AlphaBuffer = Allocate2<float>(DBlockRow, DBlockColumn);
 	GeometricTransform** GTBuffer = Allocate2<GeometricTransform>(DBlockRow, DBlockColumn);
 
-	for(int y = 0; y < BlockRow; y++)
+	for (int y = 0; y < BlockRow; y++)
 		for (int x = 0; x < BlockColumn; x++)
 		{
 			// get block & it's average
@@ -1033,10 +934,10 @@ Information Encode(int** Image, int Height, int Width, int N)
 					BlockMean[j][i] = Block[j][i] - BlockAvg[y][x];
 
 			// get error
-			for(int j = 0; j < DBlockRow; j++)
+			for (int j = 0; j < DBlockRow; j++)
 				for (int i = 0; i < DBlockColumn; i++)
-					ErrorList[j][i] = GetMinErrorGTAlpha(BlockMean, DBlock2Mean[j][i], N, &GTBuffer[j][i], &AlphaBuffer[j][i]);
-			
+					ErrorList[j][i] = GetMinErrorGTAlpha(BlockMean, DBlock2Mean, N, Point2i(i, j), &GTBuffer[j][i], &AlphaBuffer[j][i]);
+
 			// get minimum error coordinate
 			for (int j = 0; j < DBlockRow; j++)
 				for (int i = 0; i < DBlockColumn; i++)
@@ -1048,7 +949,7 @@ Information Encode(int** Image, int Height, int Width, int N)
 					}
 
 #ifdef MODE_DEBUG
-			printf("Block(%3d, %3d) Minimum Error Coordinate: (%3d, %3d) Block Average Brightness: %d\n", x * N, y * N, MinErrorCoordinate[y][x].x, MinErrorCoordinate[y][x].y, BlockAvg[y][x]);
+			printf("Block(%3d, %3d) Minimum Error Coordinate: (%3d, %3d) Block Average Brightness: (%3d) GT: (%d) MinErrorAlpha: (%f)\n", x * N, y * N, MinErrorCoordinate[y][x].x, MinErrorCoordinate[y][x].y, BlockAvg[y][x], MinErrorGT[y][x], MinErrorAlpha[y][x]);
 #endif
 		}
 
@@ -1060,12 +961,13 @@ Information Encode(int** Image, int Height, int Width, int N)
 	result.MinErrorAlpha = MinErrorAlpha;
 
 	// Free Unnecessary Memory
-	Free2<float>(MinErrorAlpha, DBlockRow, DBlockColumn);
-	Free2<GeometricTransform>(MinErrorGT, DBlockRow, DBlockColumn);
+	Free2<float>(MinErrorAlpha, BlockRow, BlockColumn);
+	Free2<GeometricTransform>(MinErrorGT, BlockRow, BlockColumn);
 	Free2<Point2i>(MinErrorCoordinate, BlockRow, BlockColumn);
-	Free2<int>(BlockAvg, BlockRow, BlockColumn);
 	Free2<int>(ErrorList, DBlockRow, DBlockColumn);
-	Free4<int>(DBlock2Mean, DBlockRow, DBlockColumn, N, N);
+	Free2<int>(BlockAvg, BlockRow, BlockColumn);
+	for (int i = 0; i < 8; i++)
+		Free4<int>(DBlock2Mean[i], DBlockRow, DBlockColumn, N, N);
 	Free2<int>(Block, N, N);
 	Free2<int>(BlockMean, N, N);
 	Free2<float>(AlphaBuffer, DBlockRow, DBlockColumn);
@@ -1207,7 +1109,7 @@ class Timer
 public:
 	void start()
 	{
-		m_StartTime = std::chrono::system_clock::now(); 
+		m_StartTime = std::chrono::system_clock::now();
 		m_bRunning = true;
 	}
 
@@ -1376,7 +1278,6 @@ int main()
 	- Sampling - 0.3 ~ 1.0
 	- Down Sampling
 	- Æò±Õ°ª + Æò±ÕÁ¦°Å
-
 	* Fractal Decoding
 	*/
 
