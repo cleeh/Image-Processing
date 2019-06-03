@@ -961,11 +961,7 @@ Information Encode(int** Image, int Height, int Width, int N)
 	result.MinErrorAlpha = MinErrorAlpha;
 
 	// Free Unnecessary Memory
-	Free2<float>(MinErrorAlpha, BlockRow, BlockColumn);
-	Free2<GeometricTransform>(MinErrorGT, BlockRow, BlockColumn);
-	Free2<Point2i>(MinErrorCoordinate, BlockRow, BlockColumn);
 	Free2<int>(ErrorList, DBlockRow, DBlockColumn);
-	Free2<int>(BlockAvg, BlockRow, BlockColumn);
 	for (int i = 0; i < 8; i++)
 		Free4<int>(DBlock2Mean[i], DBlockRow, DBlockColumn, N, N);
 	Free2<int>(Block, N, N);
@@ -1102,6 +1098,17 @@ void MinNtimes(int** Image, int Height, int Width, int N, int** ImageOut)
 	}
 
 	IntFree2(ImageBuffer, Height, Width);
+}
+
+double PSNR(int** Image1, int** Image2, int Height, int Width)
+{
+	double err = 0.0;
+	for (int i = 0; i < Height; i++) for (int j = 0; j < Width; j++)
+		err += ((double)Image1[i][j] - Image2[i][j]) * (Image1[i][j] - Image2[i][j]);
+
+	err = err / (Width*Height);
+
+	return(10.0 * log10(255 * 255.0 / err));
 }
 
 class Timer
@@ -1425,23 +1432,24 @@ int main()
 
 #ifdef LECTURE
 #ifdef TEST
-	int** Image = DogImage;
+	int** Image = IntAlloc2(LenaHeight, LenaWidth);
+	CopyImage(Image, LenaImage, LenaHeight, LenaWidth);
 
-	for (int i = 0; i < 1; i++)
-	{
-		Information a;
-		a = Encode(Image, DogHeight, DogWidth, 8);
+	Information a;
+	a = Encode(Image, LenaHeight, LenaWidth, 8);
 
-		std::cout << "=====================================================================" << std::endl;
-		std::cout << i << ". Encoding: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
-		LastTime = Clock.elapsedSeconds();
+	std::cout << "=====================================================================" << std::endl;
+	std::cout << "Encoding: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
 
-		Decode(Image, LenaImage, LenaHeight, LenaWidth, 8, a);
-		std::cout << "=====================================================================" << std::endl;
-		std::cout << i << ". Decoding: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
-		LastTime = Clock.elapsedSeconds();
-	}
+	for (int i = 0; i <= 100; i++)
+		Decode(Image, Image, LenaHeight, LenaWidth, 8, a);		
 	ImageShow("Image", Image, LenaHeight, LenaWidth);
+	std::cout << "=====================================================================" << std::endl;
+	std::cout << "Decoding 1000th: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
+
+	printf("\n PSNR = %f\n", PSNR(LenaImage, Image, LenaHeight, LenaWidth));
 
 #endif
 #endif
