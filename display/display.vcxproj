@@ -151,11 +151,11 @@
     <ClCompile Include="source.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Exam.pdf" />
-    <None Include="C:\Users\Coria\Downloads\Pinhole Camera.pptx" />
+    <None Include="..\Exam.pdf" />
+    <None Include="..\Pinhole Camera.pptx" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\Down Sampling.png" />
+    <Image Include="..\Down Sampling.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

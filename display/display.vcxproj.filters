@@ -20,15 +20,15 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="C:\Users\Coria\Downloads\Pinhole Camera.pptx">
+    <None Include="..\Exam.pdf">
       <Filter>리소스 파일</Filter>
     </None>
-    <None Include="..\..\Exam.pdf">
+    <None Include="..\Pinhole Camera.pptx">
       <Filter>리소스 파일</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\Down Sampling.png">
+    <Image Include="..\Down Sampling.png">
       <Filter>리소스 파일</Filter>
     </Image>
   </ItemGroup>
