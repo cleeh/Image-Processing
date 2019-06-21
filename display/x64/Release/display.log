@@ -6,7 +6,7 @@ source.cpp(747): warning C4244: '=': 'double'에서 'int'(으)로 변환하면�
 source.cpp(820): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 source.cpp(820): warning C4244: '초기화 중': 'double'에서 'const int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 source.cpp(992): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-source.cpp(1250): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+source.cpp(1249): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
 source.cpp(775): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
   source.cpp(905): note: 컴파일 중인 함수 템플릿 인스턴스화 'void ImageScaling<int>(Type **,int,int,float,Type **)'에 대한 참조를 확인하십시오.
           with
@@ -14,9 +14,9 @@ source.cpp(775): warning C4244: '=': 'double'에서 'int'(으)로 변환하면�
               Type=int
           ]
   코드를 생성하고 있습니다.
-  5 of 342 functions ( 1.5%) were compiled, the rest were copied from previous compilation.
+  3 of 342 functions ( 0.9%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    1 functions had inline decision re-evaluated but remain unchanged
+    2 functions had inline decision re-evaluated but remain unchanged
   코드를 생성했습니다.
   display.vcxproj -> C:\Users\youli\OneDrive\바탕 화면\Workspace\download\Image-Processing\x64\Release\display.exe
   display.vcxproj -> C:\Users\youli\OneDrive\바탕 화면\Workspace\download\Image-Processing\x64\Release\display.pdb (Full PDB)

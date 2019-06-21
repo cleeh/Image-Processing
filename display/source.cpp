@@ -760,8 +760,8 @@ int GetError(int** Image1, int** Image2, int Height, int Width)
 {
 	int Total = 0;
 
-	for (int y = 0; y < Height; y++)
-		for (int x = 0; x < Width; x++)
+	for (int y = Height - 1; y >= 0; y--)
+		for (int x = Width - 1; x >= 0; x--)
 			Total += abs(Image1[y][x] - Image2[y][x]);
 
 	return Total;
@@ -770,8 +770,8 @@ int GetError(int** Image1, int** Image2, int Height, int Width)
 template<typename Type>
 void ImageScaling(Type** Image, int Height, int Width, float Scale, Type** ImageOut)
 {
-	for (int y = 0; y < Height; y++)
-		for (int x = 0; x < Width; x++)
+	for (int y = Height - 1; y >= 0; y--)
+		for (int x = Width - 1; x >= 0; x--)
 			ImageOut[y][x] = Image[y][x] * Scale + 0.5;
 }
 
@@ -784,7 +784,7 @@ void ImageCalibrating(Type** Image, int Height, int Width, int value, Type** Ima
 }
 
 template<typename Type>
-void ImageCliping(Type** Image, int Height, int Width, Type** ImageOut, Type MaxValue, Type MinValue = 0)
+void ImageClipping(Type** Image, int Height, int Width, Type** ImageOut, Type MaxValue, Type MinValue = 0)
 {
 	for (int y = 0; y < Height; y++)
 		for (int x = 0; x < Width; x++)
@@ -891,15 +891,15 @@ void GetGTImage(int** ImageDest, int** Image, int N, GeometricTransform GT = GT0
 	}
 }
 
-inline int GetMinErrorGTAlpha(int** BlockMean, int***** DBlock2Mean, int N, Point2i BlockSpot, GeometricTransform* MinErrorGT = NULL, float* MinErrorAlpha = NULL, float MinAlpha = 0.2f, float MaxAlpha = 1.0f, float AlphaDiff = 0.1f)
+int GetMinErrorGTAlpha(int** BlockMean, int***** DBlock2Mean, int N, Point2i BlockSpot, GeometricTransform* MinErrorGT = NULL, float* MinErrorAlpha = NULL, float MinAlpha = 0.3f, float MaxAlpha = 1.0f, float AlphaDiff = 0.1f)
 {
 	// Initialize
 	int** ScaledImageBuffer = IntAlloc2(N, N);
-	int ErrorBuffer = 0;
+	int ErrorBuffer = INT_MAX;
 	int Error = INT_MAX;
 
 	// Processing
-	for (int i = 0; i < 8; i++)
+	for (int i = 7; i >= 0; i--)
 		for (float alpha = MaxAlpha; alpha >= MinAlpha; alpha -= AlphaDiff)
 		{
 			ImageScaling<int>(DBlock2Mean[i][BlockSpot.y][BlockSpot.x], N, N, alpha, ScaledImageBuffer);
@@ -954,7 +954,7 @@ Information Encode(int** Image, int Height, int Width, int N, bool IsInitialProc
 			MinErrorCoordinate[y][x] = Point2i(0, 0);
 
 	ErrorList = Allocate2<int>(DBlockRow, DBlockColumn);
-	ImageCalibrating<int>(ErrorList, DBlockRow, DBlockColumn, 10000000, ErrorList);
+	ImageCalibrating<int>(ErrorList, DBlockRow, DBlockColumn, INT_MAX, ErrorList);
 
 	BlockAvg = Allocate2<int>(BlockRow, BlockColumn);
 	for(int i = 0; i < 8; i++)
@@ -984,8 +984,8 @@ Information Encode(int** Image, int Height, int Width, int N, bool IsInitialProc
 	float** AlphaBuffer = Allocate2<float>(DBlockRow, DBlockColumn);
 	GeometricTransform** GTBuffer = Allocate2<GeometricTransform>(DBlockRow, DBlockColumn);
 
-	for (int y = 0; y < BlockRow; y++)
-		for (int x = 0; x < BlockColumn; x++)
+	for (int y = BlockRow - 1; y >= 0; y--)
+		for (int x = BlockColumn - 1; x >= 0; x--)
 		{
 			// get block & it's average
 			ReadBlock(Image, Height, Width, Block, N, N, Point2i(x * N, y * N));
@@ -997,8 +997,8 @@ Information Encode(int** Image, int Height, int Width, int N, bool IsInitialProc
 					BlockMean[j][i] = Block[j][i] - BlockAvg[y][x];
 
 			// get error
-			for (int j = 0; j < DBlockRow; j++)
-				for (int i = 0; i < DBlockColumn; i++)
+			for (int j = DBlockRow - 1; j >= 0; j--)
+				for (int i = DBlockColumn - 1; i >= 0; i--)
 					ErrorList[j][i] = GetMinErrorGTAlpha(BlockMean, DBlock2Mean, N, Point2i(i, j), &GTBuffer[j][i], &AlphaBuffer[j][i]);
 
 			// get minimum error coordinate
@@ -1085,22 +1085,23 @@ void Decode(int** ImageOut, int** Image, int Height, int Width, int N, Informati
 			ImageScaling(DBlock2Mean, N, N, arguments.MinErrorAlpha[y][x], ImageBuffer);
 			GetGTImage(DBlock2Mean, ImageBuffer, N, arguments.MinErrorGT[y][x]);
 			ImageCalibrating(DBlock2Mean, N, N, arguments.BlockAvg[y][x], DBlock2Mean);
-			ImageCliping(DBlock2Mean, N, N, DBlock2Mean, 255, 0);
 
 			WriteBlock(ImageOut, Height, Width, DBlock2Mean, Point2i(x * N, y * N), N, N);
 		}
 
 	if (IsInitialProcess)
 	{
+		int** Block = IntAlloc2(N, N);
 		for (int i = arguments.LastProcessNumber - 1; i >= 0; i--)
 		{
-			int** Block = IntAlloc2(N, N);
-
 			ReadBlock(Image, Height, Width, Block, N, N, arguments.LastBlockPos[i]);
 			Decode(Block, Block, N, N, N / 2, arguments.LastInformation[i], false);
 			WriteBlock(ImageOut, Height, Width, Block, arguments.LastBlockPos[i], N, N);
 		}
+		IntFree2(Block, N, N);
 	}
+
+	ImageClipping(DBlock2Mean, Height, Width, DBlock2Mean, 255, 0);
 
 	// Free Unnecessary Memory
 	IntFree2(ImageBuffer, N, N);
@@ -1558,7 +1559,7 @@ int main()
 	const int TargetHeight = LenaHeight;
 	const int TargetWidth = LenaWidth;
 	const int TargetN = 8;
-	const bool LastProcessTrigger = false;
+	const bool LastProcessTrigger = true;
 
 	/*int** TargetImage = PasteImage;
 	int** OtherImage = CalendarImage;
@@ -1586,7 +1587,7 @@ int main()
 	}
 
 	std::cout << "=====================================================================" << std::endl;
-	std::cout << "Decoding 200th: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	std::cout << "Decoding 2000th: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
 	LastTime = Clock.elapsedSeconds();
 	ImageShow("Image", Image, TargetHeight, TargetWidth);
 
