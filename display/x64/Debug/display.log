@@ -1,2 +1,10 @@
-﻿  display.vcxproj -> E:\Projects\[Project] OpenCV\Image-Processing\x64\Debug\display.exe
-  display.vcxproj -> E:\Projects\[Project] OpenCV\Image-Processing\x64\Debug\display.pdb (Full PDB)
+﻿  source.cpp
+c:\users\youli\onedrive\바탕 화면\workspace\download\image-processing-0b50db157c53bc59d9dd501238b89d45faa7e79d\display\source.cpp(415): warning C4244: '인수': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\youli\onedrive\바탕 화면\workspace\download\image-processing-0b50db157c53bc59d9dd501238b89d45faa7e79d\display\source.cpp(577): warning C4005: 'MIN': 매크로 재정의
+  c:\opencv\build\include\opencv2\core\cvdef.h(337): note: 'MIN'의 이전 정의를 참조하십시오.
+c:\users\youli\onedrive\바탕 화면\workspace\download\image-processing-0b50db157c53bc59d9dd501238b89d45faa7e79d\display\source.cpp(747): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\youli\onedrive\바탕 화면\workspace\download\image-processing-0b50db157c53bc59d9dd501238b89d45faa7e79d\display\source.cpp(820): warning C4244: '초기화 중': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\youli\onedrive\바탕 화면\workspace\download\image-processing-0b50db157c53bc59d9dd501238b89d45faa7e79d\display\source.cpp(820): warning C4244: '초기화 중': 'double'에서 'const int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\youli\onedrive\바탕 화면\workspace\download\image-processing-0b50db157c53bc59d9dd501238b89d45faa7e79d\display\source.cpp(991): warning C4244: '=': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\youli\onedrive\바탕 화면\workspace\download\image-processing-0b50db157c53bc59d9dd501238b89d45faa7e79d\display\source.cpp(1251): warning C4244: 'return': '__int64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+c:\users\youli\onedrive\바탕 화면\workspace\download\image-processing-0b50db157c53bc59d9dd501238b89d45faa7e79d\display\source.cpp(1557): error C2018: '0x60' 문자를 인식할 수 없습니다.

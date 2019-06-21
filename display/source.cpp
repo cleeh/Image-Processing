@@ -8,17 +8,46 @@
 #include <chrono>
 #include <limits.h>
 
+#include <vector>
+#include <algorithm>
+
 #include <opencv2/opencv.hpp>   
 #include <opencv2/core/core.hpp>   
 #include <opencv2/highgui/highgui.hpp>  
 
 using namespace cv;
+using namespace std;
 
 #define PI 3.14159265359
 
 typedef struct {
 	int r, g, b;
 }int_rgb;
+
+class ErrorInfo
+{
+public:
+	int x;
+	int y;
+	int Error;
+
+	ErrorInfo();
+	ErrorInfo(int error, int x, int y);
+};
+
+ErrorInfo::ErrorInfo()
+{
+	x = 0;
+	y = 0;
+	Error = 0;
+}
+
+ErrorInfo::ErrorInfo(int error, int x, int y)
+{
+	this->x = x;
+	this->y = y;
+	Error = error;
+}
 
 float** FloatAlloc2(int height, int width)
 {
@@ -684,12 +713,8 @@ void ReadBlock(int** Image, int Height, int Width, int** Block, int HeightBlock,
 * @param HeightSrc height of block from 'ImageSrc'
 * @param WidthSrc width of block from "ImageSrc'
 */
-void WriteBlock(int** ImageOut, int** ImageDest, int Height, int Width, int** ImageSrc, Point2i Spot, int HeightSrc, int WidthSrc)
+void WriteBlock(int** ImageOut, int Height, int Width, int** ImageSrc, Point2i Spot, int HeightSrc, int WidthSrc)
 {
-	for (int y = 0; y < Height; y++)
-		for (int x = 0; x < Width; x++)
-			ImageOut[y][x] = ImageDest[y][x];
-
 	for (int y = 0; y < HeightSrc; y++)
 		for (int x = 0; x < WidthSrc; x++)
 		{
@@ -758,6 +783,21 @@ void ImageCalibrating(Type** Image, int Height, int Width, int value, Type** Ima
 			ImageOut[y][x] = Image[y][x] + value;
 }
 
+template<typename Type>
+void ImageCliping(Type** Image, int Height, int Width, Type** ImageOut, Type MaxValue, Type MinValue = 0)
+{
+	for (int y = 0; y < Height; y++)
+		for (int x = 0; x < Width; x++)
+		{
+			if (Image[y][x] > MaxValue)
+				ImageOut[y][x] = MaxValue;
+			else if (Image[y][x] < MinValue)
+				ImageOut[y][x] = MinValue;
+			else
+				ImageOut[y][x] = Image[y][x];
+		}
+}
+
 void CopyImage(int** ImageDest, int** ImageSrc, int Height, int Width)
 {
 	for (int y = 0; y < Height; y++)
@@ -798,37 +838,54 @@ enum GeometricTransform {
 	GTInverseBackSlash
 };
 
-typedef struct {
+typedef struct Information{
 	Point2i** MinErrorCoordinate;
 	int** BlockAvg;
 	GeometricTransform** MinErrorGT;
 	float** MinErrorAlpha;
+	Information* LastInformation = NULL;
+	Point2i* LastPosition = NULL;
+	int LastProcessNumber = 0;
 }Information;
 
-void GetGTImage(int** Image, int N, GeometricTransform GT = GT0)
+void GetGTImage(int** ImageDest, int** Image, int N, GeometricTransform GT = GT0)
 {
 	switch (GT)
 	{
 	case GT90: // 90 degree rotation
-		RotationTransform(Image, Image, N, N, 90);
+		for (int y = 0; y < N; y++)
+			for (int x = 0; x < N; x++)
+				ImageDest[y][x] = Image[x][-y + N - 1];
 		break;
 	case GT180: // 180 degree rotation
-		RotationTransform(Image, Image, N, N, 180);
+		for (int y = 0; y < N; y++)
+			for (int x = 0; x < N; x++)
+				ImageDest[y][x] = Image[-y + N - 1][-x + N - 1];
 		break;
 	case GT270: // 270 degree rotation
-		RotationTransform(Image, Image, N, N, 270);
+		for (int y = 0; y < N; y++)
+			for (int x = 0; x < N; x++)
+				ImageDest[y][x] = Image[-x + N - 1][y];
 		break;
 	case GTInverseX: // inverse to x-axis
-		BilinearInterpolation(Image, Image, N, N, 1, 0, 0, -1);
+		for (int y = 0; y < N; y++)
+			for (int x = 0; x < N; x++)
+				ImageDest[y][x] = Image[N - y - 1][x];
 		break;
 	case GTInverseY: // inverse to y-axis
-		BilinearInterpolation(Image, Image, N, N, -1, 0, 0, 1);
+		for (int y = 0; y < N; y++)
+			for (int x = 0; x < N; x++)
+				ImageDest[y][x] = Image[y][N - x - 1];
 		break;
 	case GTInverseSlash: // inverse to y=x
-		BilinearInterpolation(Image, Image, N, N, 0, 1, 1, 0);
+		for (int y = 0; y < N; y++)
+			for (int x = 0; x < N; x++)
+				ImageDest[y][x] = Image[N - x - 1][N - y - 1];
 		break;
 	case GTInverseBackSlash: // inverse to y=-x
-		BilinearInterpolation(Image, Image, N, N, 0, -1, -1, 0);
+		for (int y = 0; y < N; y++)
+			for (int x = 0; x < N; x++)
+				ImageDest[y][x] = Image[x][y];
 		break;
 	}
 }
@@ -860,7 +917,14 @@ inline int GetMinErrorGTAlpha(int** BlockMean, int***** DBlock2Mean, int N, Poin
 	return Error;
 }
 
-Information Encode(int** Image, int Height, int Width, int N)
+bool ErrorCmp(const ErrorInfo &Info1, const ErrorInfo &Info2) {
+	if (Info1.Error > Info2.Error)
+		return true;
+	else
+		return false;
+}
+
+Information Encode(int** Image, int Height, int Width, int N, bool IsInitialProcess = true)
 {
 	// Factors to save
 	float** MinErrorAlpha;
@@ -886,7 +950,7 @@ Information Encode(int** Image, int Height, int Width, int N)
 	MinErrorCoordinate = Allocate2<Point2i>(BlockRow, BlockColumn);
 	for (int y = 0; y < BlockRow; y++)
 		for (int x = 0; x < BlockColumn; x++)
-			MinErrorCoordinate[y][x] = Point2i(x, y);
+			MinErrorCoordinate[y][x] = Point2i(0, 0);
 
 	ErrorList = Allocate2<int>(DBlockRow, DBlockColumn);
 	ImageCalibrating<int>(ErrorList, DBlockRow, DBlockColumn, 10000000, ErrorList);
@@ -905,10 +969,7 @@ Information Encode(int** Image, int Height, int Width, int N)
 		{
 			GetDBlock2Mean(Image, Height, Width, N, Point2i(x, y), DBlock2Mean[0][y][x]);
 			for (int i = 1; i < 8; i++)
-			{
-				CopyImage(DBlock2Mean[i][y][x], DBlock2Mean[0][y][x], N, N);
-				GetGTImage(DBlock2Mean[i][y][x], N, (GeometricTransform)i);
-			}
+				GetGTImage(DBlock2Mean[i][y][x], DBlock2Mean[0][y][x], N, (GeometricTransform)i);
 		}
 
 #ifdef MODE_DEBUG
@@ -918,6 +979,7 @@ Information Encode(int** Image, int Height, int Width, int N)
 	// Get Minimum Error Coordinate
 	int** Block = IntAlloc2(N, N);
 	int** BlockMean = IntAlloc2(N, N);
+	int** MinError = IntAlloc2(BlockRow, BlockColumn);
 	float** AlphaBuffer = Allocate2<float>(DBlockRow, DBlockColumn);
 	GeometricTransform** GTBuffer = Allocate2<GeometricTransform>(DBlockRow, DBlockColumn);
 
@@ -946,6 +1008,7 @@ Information Encode(int** Image, int Height, int Width, int N)
 						MinErrorCoordinate[y][x] = Point2i(i, j);
 						MinErrorGT[y][x] = GTBuffer[j][i];
 						MinErrorAlpha[y][x] = AlphaBuffer[j][i];
+						MinError[y][x] = ErrorList[j][i];
 					}
 
 #ifdef MODE_DEBUG
@@ -953,8 +1016,41 @@ Information Encode(int** Image, int Height, int Width, int N)
 #endif
 		}
 
-	// Return Information which is for Decoding
 	Information result;
+
+	if (IsInitialProcess) {
+
+		const int LastProcessNumber = BlockRow * BlockColumn / 5;
+
+		Information* LastInfo = (Information*)calloc(LastProcessNumber, sizeof(Information));
+		Point2i* LastPos = (Point2i*)calloc(LastProcessNumber, sizeof(Point2i));
+		vector<ErrorInfo> LastProcessList;
+
+		for (int y = BlockRow - 1; y >= 0; y--)
+			for (int x = BlockColumn - 1; x >= 0; x--)
+				LastProcessList.push_back(ErrorInfo(MinError[y][x], MinErrorCoordinate[y][x].x, MinErrorCoordinate[y][x].y));
+		sort(LastProcessList.begin(), LastProcessList.end(), ErrorCmp);
+
+		for (int i = LastProcessNumber - 1; i >= 0; i--)
+		{
+			ErrorInfo temp = LastProcessList.back();
+
+			int** TempBlock = IntAlloc2(N, N);
+			ReadBlock(Image, Height, Width, TempBlock, N, N, Point2i(temp.x, temp.y));
+			
+			LastInfo[i] = Encode(TempBlock, N, N, N / 2, false);
+			LastPos[i] = Point2i(temp.x, temp.y);
+
+			std::cout << i << ": " << temp.x << ", " << temp.y << " - " << temp.Error << std::endl;
+			LastProcessList.pop_back();
+		}
+
+		result.LastInformation = LastInfo;
+		result.LastProcessNumber = LastProcessNumber;
+		result.LastPosition = LastPos;
+	}
+
+	// Return Information which is for Decoding
 	result.BlockAvg = BlockAvg;
 	result.MinErrorCoordinate = MinErrorCoordinate;
 	result.MinErrorGT = MinErrorGT;
@@ -966,36 +1062,49 @@ Information Encode(int** Image, int Height, int Width, int N)
 		Free4<int>(DBlock2Mean[i], DBlockRow, DBlockColumn, N, N);
 	Free2<int>(Block, N, N);
 	Free2<int>(BlockMean, N, N);
+	Free2<int>(MinError, BlockRow, BlockColumn);
 	Free2<float>(AlphaBuffer, DBlockRow, DBlockColumn);
 	Free2<GeometricTransform>(GTBuffer, DBlockRow, DBlockColumn);
 
 	return result;
 }
 
-void Decode(int** ImageOut, int** Image, int Height, int Width, int N, Information arguments)
+void Decode(int** ImageOut, int** Image, int Height, int Width, int N, Information arguments, bool IsInitialProcess = true)
 {
 	// Block Factor
 	const int BlockRow = Height / N;
 	const int BlockColumn = Width / N;
 
+	int** ImageBuffer = IntAlloc2(N, N);
 	int** DBlock2Mean = IntAlloc2(N, N);
 
 	for (int y = 0; y < BlockRow; y++)
 		for (int x = 0; x < BlockColumn; x++)
 		{
-			for (int j = 0; j < N; j++)
-				for (int i = 0; i < N; i++)
-				{
-					GetDBlock2Mean(Image, Height, Width, N, Point2i(arguments.MinErrorCoordinate[y][x].x, arguments.MinErrorCoordinate[y][x].y), DBlock2Mean);
-					GetGTImage(DBlock2Mean, N, arguments.MinErrorGT[y][x]);
-					ImageScaling(DBlock2Mean, N, N, arguments.MinErrorAlpha[y][x], DBlock2Mean);
-					ImageCalibrating(DBlock2Mean, N, N, arguments.BlockAvg[y][x], DBlock2Mean);
-				}
+			GetDBlock2Mean(Image, Height, Width, N, Point2i(arguments.MinErrorCoordinate[y][x].x, arguments.MinErrorCoordinate[y][x].y), DBlock2Mean);
+			GetGTImage(ImageBuffer, DBlock2Mean, N, arguments.MinErrorGT[y][x]);
+			ImageScaling(ImageBuffer, N, N, arguments.MinErrorAlpha[y][x], DBlock2Mean);
+			ImageCalibrating(DBlock2Mean, N, N, arguments.BlockAvg[y][x], DBlock2Mean);
+			ImageCliping(DBlock2Mean, N, N, DBlock2Mean, 255, 0);
 
-			WriteBlock(ImageOut, ImageOut, Height, Width, DBlock2Mean, Point2i(x * N, y * N), N, N);
+			WriteBlock(ImageOut, Height, Width, DBlock2Mean, Point2i(x * N, y * N), N, N);
 		}
 
+	if (IsInitialProcess)
+	{
+		Information* a = arguments.LastInformation;
+		for (int i = arguments.LastProcessNumber - 1; i >= 0; i--)
+		{
+			int** Block = IntAlloc2(N, N);
+			ReadBlock(Image, Height, Width, Block, N / 2, N / 2, arguments.LastPosition[i]);
+
+			Decode(Block, Block, N, N, N / 2, *a, false);
+			WriteBlock(ImageOut, Height, Width, Block, arguments.LastPosition[i], N, N);
+		}
+	}
+
 	// Free Unnecessary Memory
+	IntFree2(ImageBuffer, N, N);
 	IntFree2(DBlock2Mean, N, N);
 }
 
@@ -1170,10 +1279,15 @@ int main()
 	int** BilinearInterpolationImage;
 	int** RotatedImage;
 
+	int** CalendarImage;
+	int** PasteImage;
+	int** WhiteImage;
+
 	/** width, height of image */
 	int Height, Width;
 	int LenaHeight, LenaWidth;
 	int DogHeight, DogWidth;
+	int Icon48Height, Icon48Width;
 
 	/** Initialize */
 	DogImage = ReadImage("DOG256.jpg", &DogHeight, &DogWidth);
@@ -1183,6 +1297,10 @@ int main()
 	AffinedImage = IntAlloc2(Height, Width);
 	BilinearInterpolationImage = IntAlloc2(Height, Width);
 	RotatedImage = IntAlloc2(Height, Width);
+
+	CalendarImage = ReadImage("Calendar48.png", &Icon48Height, &Icon48Width);
+	PasteImage = ReadImage("Paste48.png", &Icon48Height, &Icon48Width);
+	WhiteImage = ReadImage("White48.png", &Icon48Height, &Icon48Width);
 
 	/** Image Processing */
 #ifdef LECTURE
@@ -1432,24 +1550,45 @@ int main()
 
 #ifdef LECTURE
 #ifdef TEST
-	int** Image = IntAlloc2(LenaHeight, LenaWidth);
-	CopyImage(Image, LenaImage, LenaHeight, LenaWidth);
+	/*int** TargetImage = LenaImage;
+	int** OtherImage = DogImage;
+	const int TargetHeight = LenaHeight;
+	const int TargetWidth = LenaWidth;
+	const int TargetN = 8;*/
+
+	int** TargetImage = CalendarImage;
+	int** OtherImage = PasteImage;
+	const int TargetHeight = Icon48Height;
+	const int TargetWidth = Icon48Width;
+	const int TargetN = 6;
+	const int LastProcessTrigger = true;
+
+	int** Image = IntAlloc2(TargetHeight, TargetWidth);
+	int** ImageBuffer = IntAlloc2(TargetHeight, TargetWidth);
+	CopyImage(Image, TargetImage, TargetHeight, TargetWidth);
 
 	Information a;
-	a = Encode(Image, LenaHeight, LenaWidth, 8);
+	a = Encode(Image, TargetHeight, TargetWidth, TargetN, LastProcessTrigger);
 
 	std::cout << "=====================================================================" << std::endl;
 	std::cout << "Encoding: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
 	LastTime = Clock.elapsedSeconds();
 
-	for (int i = 0; i <= 100; i++)
-		Decode(Image, Image, LenaHeight, LenaWidth, 8, a);		
-	ImageShow("Image", Image, LenaHeight, LenaWidth);
-	std::cout << "=====================================================================" << std::endl;
-	std::cout << "Decoding 1000th: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
-	LastTime = Clock.elapsedSeconds();
+	CopyImage(Image, OtherImage, TargetHeight, TargetWidth);
+	for (int i = 0; i <= 500; i++)
+	{
+		if (i % 10 == 0)
+			std::cout << "<" << i << "> Decoding" << std::endl;
+		Decode(ImageBuffer, Image, TargetHeight, TargetWidth, TargetN, a, LastProcessTrigger);
+		Decode(Image, ImageBuffer, TargetHeight, TargetWidth, TargetN, a, LastProcessTrigger);
+	}
 
-	printf("\n PSNR = %f\n", PSNR(LenaImage, Image, LenaHeight, LenaWidth));
+	std::cout << "=====================================================================" << std::endl;
+	std::cout << "Decoding 200th: " << Clock.elapsedSeconds() - LastTime << " second" << std::endl;
+	LastTime = Clock.elapsedSeconds();
+	ImageShow("Image", Image, TargetHeight, TargetWidth);
+
+	printf("\n PSNR = %f\n", PSNR(Image, TargetImage, TargetHeight, TargetWidth));
 
 #endif
 #endif
