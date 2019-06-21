@@ -27,25 +27,25 @@ typedef struct {
 class ErrorInfo
 {
 public:
-	int x;
-	int y;
+	int BlockX;
+	int BlockY;
 	int Error;
 
 	ErrorInfo();
-	ErrorInfo(int error, int x, int y);
+	ErrorInfo(int block_x, int block_y, int error);
 };
 
 ErrorInfo::ErrorInfo()
 {
-	x = 0;
-	y = 0;
+	BlockX = 0;
+	BlockY = 0;
 	Error = 0;
 }
 
-ErrorInfo::ErrorInfo(int error, int x, int y)
+ErrorInfo::ErrorInfo(int block_x, int block_y, int error)
 {
-	this->x = x;
-	this->y = y;
+	BlockX = block_x;
+	BlockY = block_y;
 	Error = error;
 }
 
@@ -772,7 +772,7 @@ void ImageScaling(Type** Image, int Height, int Width, float Scale, Type** Image
 {
 	for (int y = 0; y < Height; y++)
 		for (int x = 0; x < Width; x++)
-			ImageOut[y][x] = Image[y][x] * Scale;
+			ImageOut[y][x] = Image[y][x] * Scale + 0.5;
 }
 
 template<typename Type>
@@ -844,7 +844,8 @@ typedef struct Information{
 	GeometricTransform** MinErrorGT;
 	float** MinErrorAlpha;
 	Information* LastInformation = NULL;
-	Point2i* LastPosition = NULL;
+	Point2i* LastBlockPos = NULL;
+	Point2i* LastDBlockPos = NULL;
 	int LastProcessNumber = 0;
 }Information;
 
@@ -855,17 +856,17 @@ void GetGTImage(int** ImageDest, int** Image, int N, GeometricTransform GT = GT0
 	case GT90: // 90 degree rotation
 		for (int y = 0; y < N; y++)
 			for (int x = 0; x < N; x++)
-				ImageDest[y][x] = Image[x][-y + N - 1];
+				ImageDest[y][x] = Image[x][N - y - 1];
 		break;
 	case GT180: // 180 degree rotation
 		for (int y = 0; y < N; y++)
 			for (int x = 0; x < N; x++)
-				ImageDest[y][x] = Image[-y + N - 1][-x + N - 1];
+				ImageDest[y][x] = Image[N - y - 1][N - x - 1];
 		break;
 	case GT270: // 270 degree rotation
 		for (int y = 0; y < N; y++)
 			for (int x = 0; x < N; x++)
-				ImageDest[y][x] = Image[-x + N - 1][y];
+				ImageDest[y][x] = Image[N - x - 1][y];
 		break;
 	case GTInverseX: // inverse to x-axis
 		for (int y = 0; y < N; y++)
@@ -890,7 +891,7 @@ void GetGTImage(int** ImageDest, int** Image, int N, GeometricTransform GT = GT0
 	}
 }
 
-inline int GetMinErrorGTAlpha(int** BlockMean, int***** DBlock2Mean, int N, Point2i BlockSpot, GeometricTransform* MinErrorGT = NULL, float* MinErrorAlpha = NULL, float MinAlpha = 0.3f, float MaxAlpha = 1.0f, float AlphaDiff = 0.1f)
+inline int GetMinErrorGTAlpha(int** BlockMean, int***** DBlock2Mean, int N, Point2i BlockSpot, GeometricTransform* MinErrorGT = NULL, float* MinErrorAlpha = NULL, float MinAlpha = 0.2f, float MaxAlpha = 1.0f, float AlphaDiff = 0.1f)
 {
 	// Initialize
 	int** ScaledImageBuffer = IntAlloc2(N, N);
@@ -1003,7 +1004,7 @@ Information Encode(int** Image, int Height, int Width, int N, bool IsInitialProc
 			// get minimum error coordinate
 			for (int j = 0; j < DBlockRow; j++)
 				for (int i = 0; i < DBlockColumn; i++)
-					if (ErrorList[MinErrorCoordinate[y][x].y][MinErrorCoordinate[y][x].x] > ErrorList[j][i])
+					if (ErrorList[MinErrorCoordinate[y][x].y][MinErrorCoordinate[y][x].x] >= ErrorList[j][i])
 					{
 						MinErrorCoordinate[y][x] = Point2i(i, j);
 						MinErrorGT[y][x] = GTBuffer[j][i];
@@ -1019,35 +1020,34 @@ Information Encode(int** Image, int Height, int Width, int N, bool IsInitialProc
 	Information result;
 
 	if (IsInitialProcess) {
-
 		const int LastProcessNumber = BlockRow * BlockColumn / 5;
 
 		Information* LastInfo = (Information*)calloc(LastProcessNumber, sizeof(Information));
-		Point2i* LastPos = (Point2i*)calloc(LastProcessNumber, sizeof(Point2i));
+		Point2i* LastBlockPos = (Point2i*)calloc(LastProcessNumber, sizeof(Point2i));
 		vector<ErrorInfo> LastProcessList;
 
 		for (int y = BlockRow - 1; y >= 0; y--)
 			for (int x = BlockColumn - 1; x >= 0; x--)
-				LastProcessList.push_back(ErrorInfo(MinError[y][x], MinErrorCoordinate[y][x].x, MinErrorCoordinate[y][x].y));
+				LastProcessList.push_back(ErrorInfo(x, y, MinError[y][x]));
 		sort(LastProcessList.begin(), LastProcessList.end(), ErrorCmp);
 
 		for (int i = LastProcessNumber - 1; i >= 0; i--)
 		{
-			ErrorInfo temp = LastProcessList.back();
+			ErrorInfo Target = LastProcessList.back();
 
 			int** TempBlock = IntAlloc2(N, N);
-			ReadBlock(Image, Height, Width, TempBlock, N, N, Point2i(temp.x, temp.y));
+			ReadBlock(Image, Height, Width, TempBlock, N, N, Point2i(Target.BlockX, Target.BlockY));
 			
 			LastInfo[i] = Encode(TempBlock, N, N, N / 2, false);
-			LastPos[i] = Point2i(temp.x, temp.y);
+			LastBlockPos[i] = Point2i(Target.BlockX, Target.BlockY);
 
-			std::cout << i << ": " << temp.x << ", " << temp.y << " - " << temp.Error << std::endl;
+			std::cout << "(" << i << ")" << Target.BlockX << ", " << Target.BlockY << " -> " << ": " << Target.Error << std::endl;
 			LastProcessList.pop_back();
 		}
 
 		result.LastInformation = LastInfo;
 		result.LastProcessNumber = LastProcessNumber;
-		result.LastPosition = LastPos;
+		result.LastBlockPos = LastBlockPos;
 	}
 
 	// Return Information which is for Decoding
@@ -1082,8 +1082,8 @@ void Decode(int** ImageOut, int** Image, int Height, int Width, int N, Informati
 		for (int x = 0; x < BlockColumn; x++)
 		{
 			GetDBlock2Mean(Image, Height, Width, N, Point2i(arguments.MinErrorCoordinate[y][x].x, arguments.MinErrorCoordinate[y][x].y), DBlock2Mean);
-			GetGTImage(ImageBuffer, DBlock2Mean, N, arguments.MinErrorGT[y][x]);
-			ImageScaling(ImageBuffer, N, N, arguments.MinErrorAlpha[y][x], DBlock2Mean);
+			ImageScaling(DBlock2Mean, N, N, arguments.MinErrorAlpha[y][x], ImageBuffer);
+			GetGTImage(DBlock2Mean, ImageBuffer, N, arguments.MinErrorGT[y][x]);
 			ImageCalibrating(DBlock2Mean, N, N, arguments.BlockAvg[y][x], DBlock2Mean);
 			ImageCliping(DBlock2Mean, N, N, DBlock2Mean, 255, 0);
 
@@ -1092,14 +1092,13 @@ void Decode(int** ImageOut, int** Image, int Height, int Width, int N, Informati
 
 	if (IsInitialProcess)
 	{
-		Information* a = arguments.LastInformation;
 		for (int i = arguments.LastProcessNumber - 1; i >= 0; i--)
 		{
 			int** Block = IntAlloc2(N, N);
-			ReadBlock(Image, Height, Width, Block, N / 2, N / 2, arguments.LastPosition[i]);
 
-			Decode(Block, Block, N, N, N / 2, *a, false);
-			WriteBlock(ImageOut, Height, Width, Block, arguments.LastPosition[i], N, N);
+			ReadBlock(Image, Height, Width, Block, N, N, arguments.LastBlockPos[i]);
+			Decode(Block, Block, N, N, N / 2, arguments.LastInformation[i], false);
+			WriteBlock(ImageOut, Height, Width, Block, arguments.LastBlockPos[i], N, N);
 		}
 	}
 
@@ -1282,6 +1281,8 @@ int main()
 	int** CalendarImage;
 	int** PasteImage;
 	int** WhiteImage;
+	int** BlackImage;
+	int** Black256Image;
 
 	/** width, height of image */
 	int Height, Width;
@@ -1301,6 +1302,8 @@ int main()
 	CalendarImage = ReadImage("Calendar48.png", &Icon48Height, &Icon48Width);
 	PasteImage = ReadImage("Paste48.png", &Icon48Height, &Icon48Width);
 	WhiteImage = ReadImage("White48.png", &Icon48Height, &Icon48Width);
+	BlackImage = ReadImage("Black48.png", &Icon48Height, &Icon48Width);
+	Black256Image = ReadImage("Black256.png", &LenaHeight, &LenaWidth);
 
 	/** Image Processing */
 #ifdef LECTURE
@@ -1550,18 +1553,19 @@ int main()
 
 #ifdef LECTURE
 #ifdef TEST
-	/*int** TargetImage = LenaImage;
+	int** TargetImage = LenaImage;
 	int** OtherImage = DogImage;
 	const int TargetHeight = LenaHeight;
 	const int TargetWidth = LenaWidth;
-	const int TargetN = 8;*/
+	const int TargetN = 8;
+	const bool LastProcessTrigger = false;
 
-	int** TargetImage = CalendarImage;
-	int** OtherImage = PasteImage;
+	/*int** TargetImage = PasteImage;
+	int** OtherImage = CalendarImage;
 	const int TargetHeight = Icon48Height;
 	const int TargetWidth = Icon48Width;
-	const int TargetN = 6;
-	const int LastProcessTrigger = true;
+	const int TargetN = 8;
+	const bool LastProcessTrigger = true;*/
 
 	int** Image = IntAlloc2(TargetHeight, TargetWidth);
 	int** ImageBuffer = IntAlloc2(TargetHeight, TargetWidth);
@@ -1575,10 +1579,8 @@ int main()
 	LastTime = Clock.elapsedSeconds();
 
 	CopyImage(Image, OtherImage, TargetHeight, TargetWidth);
-	for (int i = 0; i <= 500; i++)
+	for (int i = 0; i < 1000; i++)
 	{
-		if (i % 10 == 0)
-			std::cout << "<" << i << "> Decoding" << std::endl;
 		Decode(ImageBuffer, Image, TargetHeight, TargetWidth, TargetN, a, LastProcessTrigger);
 		Decode(Image, ImageBuffer, TargetHeight, TargetWidth, TargetN, a, LastProcessTrigger);
 	}
